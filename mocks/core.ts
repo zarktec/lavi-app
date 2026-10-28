@@ -1,5 +1,5 @@
 /**
- * Servidor simulado de la API /v1 (derivado de api/openapi.yaml).
+ * Servidor simulado de la API /v1 (derivado de api/openapi.json).
  * Lógica independiente del transporte: lo usan MSW (pruebas) y server.ts (desarrollo).
  *
  * Para forzar un `result` en el escaneo, usar un tag con d=sim_<caso>:
