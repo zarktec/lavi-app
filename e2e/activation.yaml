@@ -1,0 +1,9 @@
+appId: com.lavi.app.dev
+name: Activación de un frasco nuevo
+---
+- launchApp
+- openLink: "lavi://t?url=https%3A%2F%2Flinks-dev.lavi.example%2Ft%3Fd%3Dsim_activation%26c%3Dx"
+- assertVisible: "Activa tu frasco"
+- assertVisible: "Serum Lavi"
+- tapOn: "Activar mi frasco"
+- assertVisible: "Próxima dosis"

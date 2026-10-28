@@ -1,0 +1,16 @@
+appId: com.lavi.app.dev
+name: Cada result del backend muestra su pantalla
+---
+- launchApp:
+    clearState: false
+- openLink: "lavi://t?url=https%3A%2F%2Flinks-dev.lavi.example%2Ft%3Fd%3Dsim_too_early%26c%3Dx"
+- assertVisible: "Aún no es hora"
+- tapOn: "Listo"
+- openLink: "lavi://t?url=https%3A%2F%2Flinks-dev.lavi.example%2Ft%3Fd%3Dsim_recorded%26c%3Dy"
+- assertVisible: "¡Aplicación registrada!"
+- tapOn: "Listo"
+- openLink: "lavi://t?url=https%3A%2F%2Flinks-dev.lavi.example%2Ft%3Fd%3Dsim_replayed%26c%3Dz"
+- assertVisible: "No pudimos verificar este frasco"
+- tapOn: "Listo"
+- openLink: "lavi://t?url=https%3A%2F%2Fotra.com%2Ft%3Fd%3Da%26c%3Db"
+- assertVisible: "Este tag no pertenece a nuestros productos"
