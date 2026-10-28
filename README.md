@@ -20,7 +20,7 @@ npm start                    # Metro con dev client
 | Comando | Qué hace |
 |---|---|
 | `npm run typecheck` / `npm run lint` / `npm test` | TypeScript estricto, ESLint, Jest + RNTL |
-| `npm run api:generate` | Regenera `src/api/schema.d.ts` desde `api/openapi.yaml` |
+| `npm run api:generate` | Regenera `src/api/schema.d.ts` desde `api/openapi.json` (copia del OpenAPI del backend) |
 | `npm run mock` | Servidor simulado (`mocks/`) con todos los `result` del escaneo |
 | `node scripts/inject-tag.mjs android "https://<dominio>/t?d=sim_recorded&c=x"` | Inyecta una lectura en `handleTagUrl` sin tags reales (solo builds de desarrollo) |
 | `maestro test e2e/` | Flujos de extremo a extremo |
@@ -67,10 +67,9 @@ e2e/            Flujos Maestro
 
 ## Contrato de API
 
-`lavi-admin` (backend, rama `claude/pensive-fermi-fzsq8u`) **todavía no publica un OpenAPI**: su contrato vive en
-el código (`backend/src/app/v1/**` y `backend/src/lib/*`). `api/openapi.yaml` está **derivado de ese código** y de
-él se genera `src/api/schema.d.ts` (`npm run api:generate`). Cuando el backend publique su especificación oficial,
-se reemplaza el archivo y se regenera; ante cualquier diferencia manda la del backend.
+El contrato oficial lo publica el backend: `lavi-admin/docs/openapi.json` (también en `GET /v1/openapi.json`).
+`api/openapi.json` es una **copia** de ese archivo y de ella se genera `src/api/schema.d.ts`
+(`npm run api:generate`). Para actualizar: copiar el archivo nuevo y regenerar; el compilador señala lo que cambió.
 
 Puntos del backend que la app respeta tal cual:
 

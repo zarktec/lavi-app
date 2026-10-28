@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest",
-    "api:generate": "openapi-typescript api/openapi.yaml -o src/api/schema.d.ts",
+    "api:generate": "openapi-typescript api/openapi.json -o src/api/schema.d.ts",
     "mock": "tsx mocks/server.ts",
     "dev:inject": "node scripts/inject-tag.mjs"
   },

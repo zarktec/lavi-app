@@ -11,6 +11,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Configuración de la app
+         * @description Versión mínima, textos de notificaciones, ajustes globales y enlaces de tienda. Pública y cacheable.
+         */
         get: operations["getAppConfig"];
         put?: never;
         post?: never;
@@ -29,7 +33,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Iniciar sesión con Shopify
+         * @description Valida el token de la Customer Account API, crea o actualiza la usuaria por `shopify_customer_id` y emite la sesión propia.
+         */
         post: operations["createSession"];
+        /**
+         * Cerrar sesión
+         * @description Revoca el token de renovación enviado en `X-Refresh-Token`.
+         */
         delete: operations["deleteSession"];
         options?: never;
         head?: never;
@@ -45,6 +57,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Renovar tokens
+         * @description Rota el token de renovación: el anterior queda revocado.
+         */
         post: operations["refreshSession"];
         delete?: never;
         options?: never;
@@ -61,6 +77,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Registrar dispositivo para push
+         * @description Registra (o reasigna a esta usuaria) el token de Expo para el push de respaldo.
+         */
         post: operations["registerDevice"];
         delete?: never;
         options?: never;
@@ -78,6 +98,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+        /**
+         * Eliminar dispositivo
+         * @description Al cerrar sesión.
+         */
         delete: operations["deleteDevice"];
         options?: never;
         head?: never;
@@ -91,12 +115,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Perfil y saldo */
         get: operations["getMe"];
         put?: never;
         post?: never;
+        /**
+         * Eliminar cuenta
+         * @description Elimina la cuenta y los datos personales (exigido por Apple). Se pierden los puntos.
+         */
         delete: operations["deleteMe"];
         options?: never;
         head?: never;
+        /**
+         * Actualizar perfil
+         * @description Nombre, zona horaria (IANA) y aceptación de la política de datos.
+         */
         patch: operations["updateMe"];
         trace?: never;
     };
@@ -109,6 +142,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Registrar una lectura del tag
+         * @description Punto único de toda lectura. El backend verifica en orden: firma y contador → tag bloqueado → tag reclamado → es de esta clienta → ventana abierta, y se detiene en el primero que falla. Siempre responde 200 con un `result`; los rechazos son `result: "rejected"` con `reason`. Una lectura sin conexión (`offline: true`) se evalúa con `device_time`. Reenviar la misma lectura devuelve la respuesta guardada (`idempotent_replay: true`).
+         */
         post: operations["createScan"];
         delete?: never;
         options?: never;
@@ -123,8 +160,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Listar tratamientos
+         * @description Del más reciente al más antiguo, sin dosis.
+         */
         get: operations["listTreatments"];
         put?: never;
+        /**
+         * Activar un frasco
+         * @description Canjea el `activation_token` recibido en una lectura `activation_required`. Reclama el tag, crea el tratamiento con la configuración vigente y genera todas las dosis.
+         */
         post: operations["activateTreatment"];
         delete?: never;
         options?: never;
@@ -139,6 +184,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Detalle de un tratamiento
+         * @description Incluye todas las dosis y `config.reminder_nudges` para programar los recordatorios locales.
+         */
         get: operations["getTreatment"];
         put?: never;
         post?: never;
@@ -161,6 +210,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Cambiar horarios
+         * @description Regenera solo las dosis programadas que empiezan después del aviso mínimo (`schedule_change_min_notice_hours`).
+         */
         patch: operations["changeSchedule"];
         trace?: never;
     };
@@ -171,6 +224,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Saldo y próximos vencimientos */
         get: operations["getPoints"];
         put?: never;
         post?: never;
@@ -187,6 +241,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Movimientos de puntos
+         * @description Paginado hacia atrás: enviar `next_before` como `before`.
+         */
         get: operations["listLedger"];
         put?: never;
         post?: never;
@@ -203,6 +261,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Opciones de canje
+         * @description Incluye el saldo y si cada opción es alcanzable (`affordable`).
+         */
         get: operations["listRedemptionOptions"];
         put?: never;
         post?: never;
@@ -219,8 +281,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Mis canjes y códigos
+         * @description Últimos 100. `code` solo se muestra en estado `issued` o `used`.
+         */
         get: operations["listRedemptions"];
         put?: never;
+        /**
+         * Canjear puntos
+         * @description Descuenta los puntos y crea un código de un solo uso en Shopify. Idempotente por `Idempotency-Key`: repetir la petición devuelve el mismo resultado sin cobrar dos veces. Si Shopify falla los puntos se devuelven (`502`).
+         */
         post: operations["createRedemption"];
         delete?: never;
         options?: never;
@@ -233,6 +303,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         ApiError: {
+            /** @description Códigos usados por la app: validation_error, invalid_json, unauthorized, token_expired, invalid_refresh_token, account_unavailable, account_blocked, invalid_shopify_token, missing_refresh_token, missing_idempotency_key, activation_token_invalid, activation_token_mismatch, tag_not_found, tag_already_claimed, tag_blocked, active_treatment_exists, variant_not_configured, invalid_times, times_overlap, invalid_start_date, no_doses, treatment_not_found, treatment_not_active, schedule_unchanged, schedule_change_limit, option_not_found, below_minimum, insufficient_points, request_in_progress, shopify_unavailable, shopify_discount_failed, internal_error. `schedule_change_limit` agrega `max_count` y `period_days`. */
             error: {
                 code: string;
                 message: string;
@@ -271,6 +342,7 @@ export interface components {
             expires_in?: number;
         };
         Session: components["schemas"]["Tokens"] & {
+            /** Format: uuid */
             user_id: string;
             needs_data_consent: boolean;
         };
@@ -280,6 +352,7 @@ export interface components {
             platform: "ios" | "android";
         };
         Me: {
+            /** Format: uuid */
             id: string;
             email?: string | null;
             name?: string | null;
@@ -299,16 +372,20 @@ export interface components {
             accept_data_policy?: true;
         };
         Product: {
+            /** Format: uuid */
             id: string;
             name: string;
         };
         Variant: {
+            /** Format: uuid */
             id: string;
             name: string;
             volume_ml?: number | null;
+            /** @description Id de la variante en Shopify (numérico o GID) */
             shopify_variant_id?: string | null;
         };
         DoseWindow: {
+            /** Format: uuid */
             id: string;
             /** Format: date-time */
             window_start: string;
@@ -316,6 +393,7 @@ export interface components {
             window_end: string;
         };
         Dose: {
+            /** Format: uuid */
             id: string;
             /** Format: date-time */
             window_start: string;
@@ -341,7 +419,9 @@ export interface components {
             schedule_change_period_days?: number;
         };
         TreatmentSummary: {
+            /** Format: uuid */
             id: string;
+            /** @description UID del tag NFC (hex) */
             tag_uid?: string;
             /** @enum {string} */
             status: "active" | "finished" | "cancelled";
@@ -389,6 +469,18 @@ export interface components {
             device_time?: string;
             offline?: boolean;
         };
+        /**
+         * @description Cuerpo según `result`:
+         *     - `activation_required`: `activation_token`, `expires_in`, `product`, `variant`, `suggested_times`, `config`.
+         *     - `dose_recorded`: `dose_id`, `points_earned`, `bonus_points`, `streak`, `balance`, `next_dose`, `treatment_completed`.
+         *     - `too_early`: `opens_at`, `window_end`, `dose_id`.
+         *     - `late`: `dose_id`, `points_earned` (0), `balance`, `next_dose`, `treatment_completed`.
+         *     - `no_pending_dose`: `next_dose` (puede ser `null`).
+         *     - `treatment_finished`: `treatment_id`, `repurchase_suggested`.
+         *     - `rejected`: `reason`.
+         *
+         *     Los clientes deben tolerar valores de `result` que no conozcan.
+         */
         ScanResponse: {
             /** @enum {string} */
             result: "activation_required" | "dose_recorded" | "too_early" | "late" | "no_pending_dose" | "treatment_finished" | "rejected";
@@ -425,6 +517,7 @@ export interface components {
             }[];
         };
         LedgerEntry: {
+            /** @description Entero de 64 bits como texto */
             id: string;
             /** @description Positivo abona, negativo descuenta */
             amount: number;
@@ -440,6 +533,7 @@ export interface components {
             next_before?: string | null;
         };
         RedemptionOption: {
+            /** Format: uuid */
             id: string;
             name: string;
             points_cost: number;
@@ -454,7 +548,9 @@ export interface components {
             options: components["schemas"]["RedemptionOption"][];
         };
         Redemption: {
+            /** Format: uuid */
             id: string;
+            /** Format: uuid */
             option_id: string;
             option_name: string;
             reward_type?: string;
@@ -471,7 +567,7 @@ export interface components {
         };
     };
     responses: {
-        /** @description Error */
+        /** @description Error con el formato { error: { code, message } } */
         Error: {
             headers: {
                 [name: string]: unknown;
@@ -532,7 +628,9 @@ export interface operations {
                     "application/json": components["schemas"]["Session"];
                 };
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
         };
     };
     deleteSession: {
@@ -553,7 +651,8 @@ export interface operations {
                 };
                 content?: never;
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
         };
     };
     refreshSession: {
@@ -580,7 +679,8 @@ export interface operations {
                     "application/json": components["schemas"]["Tokens"];
                 };
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
         };
     };
     registerDevice: {
@@ -607,7 +707,8 @@ export interface operations {
                     };
                 };
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
         };
     };
     deleteDevice: {
@@ -628,6 +729,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Error"];
         };
     };
     getMe: {
@@ -648,6 +750,7 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
+            401: components["responses"]["Error"];
         };
     };
     deleteMe: {
@@ -666,6 +769,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: components["responses"]["Error"];
         };
     };
     updateMe: {
@@ -690,7 +794,8 @@ export interface operations {
                     "application/json": components["schemas"]["Me"];
                 };
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
         };
     };
     createScan: {
@@ -715,7 +820,8 @@ export interface operations {
                     "application/json": components["schemas"]["ScanResponse"];
                 };
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
         };
     };
     listTreatments: {
@@ -738,6 +844,7 @@ export interface operations {
                     };
                 };
             };
+            401: components["responses"]["Error"];
         };
     };
     activateTreatment: {
@@ -762,7 +869,10 @@ export interface operations {
                     "application/json": components["schemas"]["Treatment"];
                 };
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     getTreatment: {
@@ -785,7 +895,8 @@ export interface operations {
                     "application/json": components["schemas"]["Treatment"];
                 };
             };
-            default: components["responses"]["Error"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     changeSchedule: {
@@ -812,7 +923,10 @@ export interface operations {
                     "application/json": components["schemas"]["Treatment"];
                 };
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     getPoints: {
@@ -833,6 +947,7 @@ export interface operations {
                     "application/json": components["schemas"]["Points"];
                 };
             };
+            401: components["responses"]["Error"];
         };
     };
     listLedger: {
@@ -856,6 +971,8 @@ export interface operations {
                     "application/json": components["schemas"]["LedgerPage"];
                 };
             };
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
         };
     };
     listRedemptionOptions: {
@@ -876,6 +993,7 @@ export interface operations {
                     "application/json": components["schemas"]["RedemptionOptions"];
                 };
             };
+            401: components["responses"]["Error"];
         };
     };
     listRedemptions: {
@@ -898,6 +1016,7 @@ export interface operations {
                     };
                 };
             };
+            401: components["responses"]["Error"];
         };
     };
     createRedemption: {
@@ -927,7 +1046,11 @@ export interface operations {
                     "application/json": components["schemas"]["Redemption"];
                 };
             };
-            default: components["responses"]["Error"];
+            400: components["responses"]["Error"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            502: components["responses"]["Error"];
         };
     };
 }
