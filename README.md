@@ -103,7 +103,7 @@ Brechas del backend frente a la especificación de la app (la app las resuelve a
 - NFC en segundo plano y por botón en iOS (XS o posterior) y Android; vibración; ventana de 30 s.
 - Universal Links / App Links: requiere que el backend sirva `apple-app-site-association` (con el Team ID) y
   `assetlinks.json` (con la huella SHA-256) en `LAVI_LINK_DOMAIN`.
-- Login real de Shopify: registrar `lavi://auth/callback` (el backend documenta `tumarca://auth/callback`: unificar el esquema) como URI de redirección del cliente público; la
+- Login real de Shopify: Shopify exige URI https; registrar `https://<LAVI_LINK_DOMAIN>/auth/callback` (página puente del backend que reenvía a `lavi://auth/callback`) como URI de redirección del cliente público; la
   autenticación del carrito (`buyerIdentity.customerAccessToken`) y el descubrimiento OAuth
   (`/.well-known/openid-configuration`) deben confirmarse contra la tienda de desarrollo.
 - Notificaciones locales y push de respaldo, tarea en segundo plano, Checkout Kit con código de canje.
