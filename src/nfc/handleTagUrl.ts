@@ -39,7 +39,7 @@ export function showInvalidTag() {
  * La app nunca interpreta el contenido cifrado del tag.
  */
 export async function handleTagUrl(url: string, path: ScanPath = "background"): Promise<void> {
-  const check = validateTagUrl(url, env.linkDomain);
+  const check = validateTagUrl(url, env.linkDomain, env.appEnv !== "production");
   if (!check.ok) {
     showOutcome({ kind: "invalid_tag" });
     return;

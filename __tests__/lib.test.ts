@@ -16,6 +16,12 @@ describe("validateTagUrl", () => {
     expect(validateTagUrl(`https://${domain}/t?d=a`, domain).ok).toBe(false);
     expect(validateTagUrl("no es una url", domain).ok).toBe(false);
   });
+  it("acepta tags de prueba ?uid= solo si se permite (no producción)", () => {
+    const url = `https://${domain}/t?uid=04A1B2C3D4E5F6`;
+    expect(validateTagUrl(url, domain).ok).toBe(false);
+    expect(validateTagUrl(url, domain, true).ok).toBe(true);
+    expect(validateTagUrl(`https://${domain}/t?uid=XYZ`, domain, true).ok).toBe(false);
+  });
   it("reconstruye la URL desde los parámetros", () => {
     expect(buildTagUrl(domain, "a", "b")).toBe(`https://${domain}/t?d=a&c=b`);
   });
