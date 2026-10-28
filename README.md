@@ -29,6 +29,13 @@ En el mock, el parámetro `d` del tag fuerza el resultado: `sim_activation`, `si
 `sim_late`, `sim_no_pending`, `sim_finished`, `sim_invalid_signature`, `sim_replayed`, `sim_owned_by_other`,
 `sim_blocked`, `sim_offline_expired`, `sim_unknown`. En el menú Perfil (solo desarrollo) hay un campo para pegar una URL.
 
+## Probar sin Shopify (modo de prueba)
+
+Perfil de EAS `development-mock`: entra sin Shopify (`LAVI_DEV_LOGIN=1`, nunca en producción) y usa el servidor
+simulado. Edita `LAVI_API_URL` en `eas.json` con la IP de tu computadora, inicia el mock
+(`MOCK_SEED=1 npm run mock`) y compila con `eas build --profile development-mock --platform android`.
+Teléfono y computadora deben estar en la misma red Wi-Fi; permite el puerto 4010 en el firewall de Windows.
+
 ## Estructura
 
 ```

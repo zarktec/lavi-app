@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { endpoints } from "@/api/endpoints";
 import { setAuthFailureHandler } from "@/api/client";
 import { queryClient, sqlitePersister } from "@/api/queryClient";
+import { env } from "@/config/env";
 import { kvGet, kvSet } from "@/lib/db";
 import { deviceTimeZone } from "@/lib/time";
 import { setSentryUser } from "@/lib/sentry";
@@ -63,7 +64,8 @@ export async function registerPushDevice() {
 
 /** Inicio de sesión con Shopify y sesión propia del backend. */
 export async function signIn(opts: { acceptedAnalytics: boolean }) {
-  const shopify = await loginWithShopify();
+  // Modo de prueba (solo fuera de producción): sin Shopify, contra el servidor simulado.
+  const shopify = env.devLogin ? { accessToken: "dev-login-token" } : await loginWithShopify();
   const tokens = await endpoints.createSession({
     shopify_access_token: shopify.accessToken,
     data_consent: true,

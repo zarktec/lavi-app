@@ -12,6 +12,9 @@ const API_URL = process.env.LAVI_API_URL ?? "http://localhost:4010";
 const SHOPIFY_STORE_DOMAIN =
   process.env.LAVI_SHOPIFY_STORE_DOMAIN ?? "lavi-dev.myshopify.com";
 const STOREFRONT_TOKEN = process.env.LAVI_STOREFRONT_TOKEN ?? "";
+// Modo de prueba: entra sin Shopify y se usa con el servidor simulado (npm run mock).
+// Nunca se activa en producción.
+const DEV_LOGIN = process.env.LAVI_DEV_LOGIN === "1" && APP_ENV !== "production";
 const CUSTOMER_ACCOUNT_CLIENT_ID =
   process.env.LAVI_CUSTOMER_ACCOUNT_CLIENT_ID ?? "";
 
@@ -93,7 +96,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     [
       "expo-build-properties",
-      { ios: { deploymentTarget: "16.4" }, android: { minSdkVersion: 26 } },
+      {
+        ios: { deploymentTarget: "16.4" },
+        // El servidor simulado se sirve por HTTP en la red local.
+        android: { minSdkVersion: 26, ...(DEV_LOGIN ? { usesCleartextTraffic: true } : {}) },
+      },
     ],
     [
       "@sentry/react-native/expo",
@@ -106,6 +113,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   experiments: { typedRoutes: true },
   extra: {
     appEnv: APP_ENV,
+    devLogin: DEV_LOGIN,
     apiUrl: API_URL,
     linkDomain: LINK_DOMAIN,
     sentryDsn: process.env.LAVI_SENTRY_DSN ?? "",

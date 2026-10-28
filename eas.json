@@ -1,5 +1,8 @@
 {
-  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -31,7 +34,16 @@
         "LAVI_LINK_DOMAIN": "links.lavi.example",
         "LAVI_SHOPIFY_STORE_DOMAIN": "lavi.myshopify.com"
       }
+    },
+    "development-mock": {
+      "extends": "development",
+      "env": {
+        "LAVI_DEV_LOGIN": "1",
+        "LAVI_API_URL": "http://192.168.1.10:4010"
+      }
     }
   },
-  "submit": { "production": {} }
+  "submit": {
+    "production": {}
+  }
 }
