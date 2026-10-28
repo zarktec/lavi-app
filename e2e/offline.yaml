@@ -1,0 +1,13 @@
+appId: com.lavi.app.dev
+name: Lectura sin conexión se guarda y se sincroniza
+---
+- launchApp
+- setAirplaneMode: enabled
+- openLink: "lavi://t?url=https%3A%2F%2Flinks-dev.lavi.example%2Ft%3Fd%3Dsim_recorded%26c%3Doff1"
+- assertVisible: "Lectura guardada"
+- tapOn: "Listo"
+- assertVisible: "pendiente"
+- setAirplaneMode: disabled
+- assertVisible:
+    text: "Tu lectura guardada se registró.*"
+    timeout: 30000

@@ -1,0 +1,37 @@
+{
+  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "env": {
+        "APP_ENV": "development",
+        "LAVI_API_URL": "https://api-dev.lavi.example",
+        "LAVI_LINK_DOMAIN": "links-dev.lavi.example",
+        "LAVI_SHOPIFY_STORE_DOMAIN": "lavi-dev.myshopify.com"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "env": {
+        "APP_ENV": "preview",
+        "LAVI_API_URL": "https://api-test.lavi.example",
+        "LAVI_LINK_DOMAIN": "links-test.lavi.example",
+        "LAVI_SHOPIFY_STORE_DOMAIN": "lavi-dev.myshopify.com"
+      }
+    },
+    "production": {
+      "channel": "production",
+      "autoIncrement": true,
+      "env": {
+        "APP_ENV": "production",
+        "LAVI_API_URL": "https://api.lavi.example",
+        "LAVI_LINK_DOMAIN": "links.lavi.example",
+        "LAVI_SHOPIFY_STORE_DOMAIN": "lavi.myshopify.com"
+      }
+    }
+  },
+  "submit": { "production": {} }
+}

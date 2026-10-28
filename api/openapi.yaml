@@ -1,0 +1,363 @@
+# Contrato /v1 usado por la app móvil.
+# BORRADOR derivado de la especificación técnica de la app: el backend (lavi-admin)
+# publica la especificación oficial y esa prevalece. Al recibirla, reemplazar este
+# archivo y ejecutar `npm run api:generate`; cualquier diferencia se reporta al backend.
+openapi: 3.0.3
+info:
+  title: Lavi API (app móvil)
+  version: 1.0.0-draft
+servers:
+  - url: http://localhost:4010
+security:
+  - bearerAuth: []
+paths:
+  /v1/config/app:
+    get:
+      operationId: getAppConfig
+      security: []
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/AppConfig" } } } }
+  /v1/auth/session:
+    post:
+      operationId: createSession
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateSessionRequest" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/AuthTokens" } } } }
+        default: { $ref: "#/components/responses/Error" }
+    delete:
+      operationId: deleteSession
+      responses:
+        "204": { description: Sesión cerrada }
+  /v1/auth/refresh:
+    post:
+      operationId: refreshSession
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/RefreshRequest" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/AuthTokens" } } } }
+        default: { $ref: "#/components/responses/Error" }
+  /v1/devices:
+    post:
+      operationId: registerDevice
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/RegisterDeviceRequest" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Device" } } } }
+        default: { $ref: "#/components/responses/Error" }
+  /v1/devices/{id}:
+    delete:
+      operationId: deleteDevice
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: Eliminado }
+  /v1/me:
+    get:
+      operationId: getMe
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Me" } } } }
+    patch:
+      operationId: updateMe
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/UpdateMeRequest" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Me" } } } }
+        default: { $ref: "#/components/responses/Error" }
+    delete:
+      operationId: deleteMe
+      responses:
+        "204": { description: Cuenta eliminada }
+  /v1/scans:
+    post:
+      operationId: createScan
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ScanRequest" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ScanResponse" } } } }
+        default: { $ref: "#/components/responses/Error" }
+  /v1/treatments:
+    get:
+      operationId: listTreatments
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/TreatmentSummary" } } } } } } }
+    post:
+      operationId: activateTreatment
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ActivateTreatmentRequest" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Treatment" } } } }
+        default: { $ref: "#/components/responses/Error" }
+  /v1/treatments/{id}:
+    get:
+      operationId: getTreatment
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Treatment" } } } }
+        default: { $ref: "#/components/responses/Error" }
+  /v1/treatments/{id}/schedule:
+    patch:
+      operationId: changeSchedule
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ChangeScheduleRequest" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleChange" } } } }
+        default: { $ref: "#/components/responses/Error" }
+  /v1/points:
+    get:
+      operationId: getPoints
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Points" } } } }
+  /v1/points/ledger:
+    get:
+      operationId: listLedger
+      parameters:
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/LedgerPage" } } } }
+  /v1/redemptions/options:
+    get:
+      operationId: listRedemptionOptions
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/RedemptionOption" } } } } } } }
+  /v1/redemptions:
+    get:
+      operationId: listRedemptions
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Redemption" } } } } } } }
+    post:
+      operationId: createRedemption
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateRedemptionRequest" } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Redemption" } } } }
+        default: { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string } }
+  responses:
+    Error:
+      description: Error
+      content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } }
+  schemas:
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties: { code: { type: string }, message: { type: string } }
+    AppConfig:
+      type: object
+      required: [min_app_version]
+      properties:
+        min_app_version: { type: string, example: "1.0.0" }
+        repurchase_reminder_days: { type: integer, example: 7 }
+        support_email: { type: string }
+        privacy_policy_url: { type: string }
+        terms_url: { type: string }
+        store_urls: { type: object, properties: { ios: { type: string }, android: { type: string } } }
+        texts: { type: object, additionalProperties: { type: string }, description: "Textos editables por clave i18n; si faltan se usan los locales." }
+    CreateSessionRequest:
+      type: object
+      required: [shopify_access_token]
+      properties:
+        shopify_access_token: { type: string }
+        shopify_id_token: { type: string }
+        privacy_policy_accepted: { type: boolean }
+        timezone: { type: string }
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties: { refresh_token: { type: string } }
+    AuthTokens:
+      type: object
+      required: [access_token, refresh_token]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer }
+    RegisterDeviceRequest:
+      type: object
+      required: [expo_push_token, platform]
+      properties:
+        expo_push_token: { type: string }
+        platform: { type: string, enum: [ios, android] }
+        app_version: { type: string }
+    Device:
+      type: object
+      required: [id]
+      properties: { id: { type: string } }
+    Me:
+      type: object
+      required: [id, timezone]
+      properties:
+        id: { type: string }
+        name: { type: string, nullable: true }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        timezone: { type: string, example: America/Bogota }
+    UpdateMeRequest:
+      type: object
+      properties: { timezone: { type: string }, name: { type: string } }
+    Product:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        presentation: { $ref: "#/components/schemas/Presentation" }
+    Presentation:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        shopify_variant_id: { type: string, description: "GID de la variante en Shopify" }
+    ReminderNudge:
+      type: object
+      required: [offset_minutes]
+      properties: { offset_minutes: { type: integer, description: "Minutos después de abrir la ventana" } }
+    Dose:
+      type: object
+      required: [id, scheduled_at, window_opens_at, window_closes_at, status]
+      properties:
+        id: { type: string }
+        scheduled_at: { type: string, format: date-time }
+        window_opens_at: { type: string, format: date-time }
+        window_closes_at: { type: string, format: date-time }
+        status: { type: string, enum: [pending, on_time, late, missed] }
+        recorded_at: { type: string, format: date-time, nullable: true }
+    TreatmentSummary:
+      type: object
+      required: [id, status, product, started_at]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [active, finished] }
+        product: { $ref: "#/components/schemas/Product" }
+        started_at: { type: string, format: date-time }
+        ends_at: { type: string, format: date-time, nullable: true }
+        next_dose: { allOf: [{ $ref: "#/components/schemas/Dose" }], nullable: true }
+        adherence_percent: { type: integer }
+    Treatment:
+      allOf:
+        - $ref: "#/components/schemas/TreatmentSummary"
+        - type: object
+          required: [schedule_times, doses, reminder_nudges]
+          properties:
+            schedule_times: { type: array, items: { type: string, example: "08:00" } }
+            doses: { type: array, items: { $ref: "#/components/schemas/Dose" } }
+            reminder_nudges: { type: array, items: { $ref: "#/components/schemas/ReminderNudge" } }
+            schedule_changes_left: { type: integer }
+            ending_soon: { type: boolean }
+    ActivateTreatmentRequest:
+      type: object
+      required: [activation_token, schedule_times]
+      properties:
+        activation_token: { type: string }
+        schedule_times: { type: array, items: { type: string } }
+    ChangeScheduleRequest:
+      type: object
+      required: [schedule_times]
+      properties: { schedule_times: { type: array, items: { type: string } } }
+    ScheduleChange:
+      type: object
+      required: [schedule_times, effective_from, changes_left]
+      properties:
+        schedule_times: { type: array, items: { type: string } }
+        effective_from: { type: string, format: date-time }
+        changes_left: { type: integer }
+        period_ends_at: { type: string, format: date-time }
+    ScanRequest:
+      type: object
+      required: [tag_url, device_time]
+      properties:
+        tag_url: { type: string }
+        device_time: { type: string, description: ISO 8601 con zona }
+        offline: { type: boolean }
+    ScanResponse:
+      type: object
+      required: [result]
+      properties:
+        # `result` es abierto a propósito: la app tolera valores desconocidos.
+        result:
+          type: string
+          enum: [activation_required, dose_recorded, too_early, late, no_pending_dose, treatment_finished, rejected]
+        reason: { type: string, enum: [invalid_signature, replayed, owned_by_other, blocked, offline_expired] }
+        activation_token: { type: string }
+        product: { $ref: "#/components/schemas/Product" }
+        suggested_schedule: { type: array, items: { type: string } }
+        dose_id: { type: string }
+        points_earned: { type: integer }
+        streak_bonus: { type: integer }
+        streak: { type: integer }
+        balance: { type: integer }
+        next_dose_at: { type: string, format: date-time, nullable: true }
+        window_opens_at: { type: string, format: date-time }
+        summary: { $ref: "#/components/schemas/TreatmentSumUp" }
+    TreatmentSumUp:
+      type: object
+      properties:
+        doses_total: { type: integer }
+        doses_on_time: { type: integer }
+        adherence_percent: { type: integer }
+    Points:
+      type: object
+      required: [balance, streak]
+      properties:
+        balance: { type: integer }
+        streak: { type: integer }
+        expiring: { type: array, items: { type: object, required: [points, expires_at], properties: { points: { type: integer }, expires_at: { type: string, format: date-time } } } }
+    LedgerEntry:
+      type: object
+      required: [id, points, reason, created_at]
+      properties:
+        id: { type: string }
+        points: { type: integer, description: "Positivo gana, negativo canjea" }
+        reason: { type: string }
+        description: { type: string }
+        created_at: { type: string, format: date-time }
+    LedgerPage:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/LedgerEntry" } }
+        next_cursor: { type: string, nullable: true }
+    RedemptionOption:
+      type: object
+      required: [id, name, cost_points]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        cost_points: { type: integer }
+    CreateRedemptionRequest:
+      type: object
+      required: [option_id]
+      properties: { option_id: { type: string } }
+    Redemption:
+      type: object
+      required: [id, code, status, option, created_at]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        status: { type: string, enum: [active, used, expired] }
+        option: { $ref: "#/components/schemas/RedemptionOption" }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, nullable: true }
