@@ -7,7 +7,8 @@ export const endpoints = {
   config: () => unwrap(api.GET("/v1/config/app")),
   createSession: (body: S["CreateSessionRequest"]) =>
     unwrap(api.POST("/v1/auth/session", { body })),
-  deleteSession: () => unwrap(api.DELETE("/v1/auth/session")),
+  deleteSession: (refreshToken: string) =>
+    unwrap(api.DELETE("/v1/auth/session", { params: { header: { "X-Refresh-Token": refreshToken } } })),
   registerDevice: (body: S["RegisterDeviceRequest"]) =>
     unwrap(api.POST("/v1/devices", { body })),
   deleteDevice: (id: string) =>
@@ -24,8 +25,8 @@ export const endpoints = {
   changeSchedule: (id: string, body: S["ChangeScheduleRequest"]) =>
     unwrap(api.PATCH("/v1/treatments/{id}/schedule", { params: { path: { id } }, body })),
   points: () => unwrap(api.GET("/v1/points")),
-  ledger: (cursor?: string) =>
-    unwrap(api.GET("/v1/points/ledger", { params: { query: { cursor, limit: 20 } } })),
+  ledger: (before?: string) =>
+    unwrap(api.GET("/v1/points/ledger", { params: { query: { before, limit: 20 } } })),
   redemptionOptions: () => unwrap(api.GET("/v1/redemptions/options")),
   redemptions: () => unwrap(api.GET("/v1/redemptions")),
   redeem: (optionId: string, idempotencyKey: string) =>

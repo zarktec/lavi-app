@@ -74,7 +74,13 @@ async function run() {
   if (delay !== null) {
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = setTimeout(() => void flushQueue(), delay);
+    (retryTimer as { unref?: () => void }).unref?.(); // Node (pruebas); en RN no existe
   }
+}
+
+export function cancelScheduledRetry() {
+  if (retryTimer) clearTimeout(retryTimer);
+  retryTimer = null;
 }
 
 /** Envía la cola en orden de lectura. Un solo vuelo a la vez. */

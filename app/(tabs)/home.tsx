@@ -4,7 +4,6 @@ import { Linking, Platform, RefreshControl, ScrollView, View } from "react-nativ
 import { useState } from "react";
 import { isEndingSoon, pickNextDose, useActiveTreatment } from "@/api/active";
 import { usePoints } from "@/api/hooks";
-import { useRemoteConfig } from "@/config/useRemoteConfig";
 import { useT } from "@/i18n";
 import { formatTime } from "@/lib/time";
 import { openNfcSettings } from "@/nfc/reader";
@@ -16,8 +15,7 @@ import { colors, radius, spacing } from "@/ui/theme";
 
 export default function Home() {
   const t = useT();
-  const { config } = useRemoteConfig();
-  const { treatment, active, isLoading, updatedAt, refetch } = useActiveTreatment();
+    const { treatment, active, isLoading, updatedAt, refetch } = useActiveTreatment();
   const points = usePoints();
   const notificationsStatus = useUiStore((s) => s.notificationsStatus);
   const nfcEnabled = useUiStore((s) => s.nfcEnabled);
@@ -30,7 +28,7 @@ export default function Home() {
 
   const next = treatment ? pickNextDose(treatment.doses) : null;
   const windowOpen = !!next?.windowOpen;
-  const endingSoon = isEndingSoon(treatment, config.repurchase_reminder_days ?? 7);
+  const endingSoon = isEndingSoon(treatment);
 
   return (
     <ScrollView
@@ -95,13 +93,13 @@ export default function Home() {
               <>
                 <Text variant="title" color={colors.white}>{t("home.windowOpen")}</Text>
                 <Text color={colors.white}>
-                  {t("home.windowOpenUntil", { time: formatTime(next.dose.window_closes_at) })}
+                  {t("home.windowOpenUntil", { time: formatTime(next.dose.window_end) })}
                 </Text>
               </>
             ) : (
               <>
-                <Text variant="display">{formatTime(next.dose.window_opens_at)}</Text>
-                <Countdown target={next.dose.window_opens_at} />
+                <Text variant="display">{formatTime(next.dose.window_start)}</Text>
+                <Countdown target={next.dose.window_start} />
               </>
             )}
             {pendingScans > 0 ? <Chip tone="warning" label={t("home.pendingSync")} /> : null}
@@ -111,14 +109,14 @@ export default function Home() {
         {!windowOpen && treatment ? (
           <View style={{ flexDirection: "row", gap: spacing.md }}>
             <StatCard
-              icon="flame-outline"
-              label={t("home.streak")}
-              value={String(points.data?.streak ?? 0)}
-            />
-            <StatCard
               icon="star-outline"
               label={t("home.balance")}
               value={String(points.data?.balance ?? 0)}
+            />
+            <StatCard
+              icon="flame-outline"
+              label={t("home.progress")}
+              value={`${treatment.progress.on_time}/${treatment.progress.total}`}
             />
           </View>
         ) : null}

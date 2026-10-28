@@ -43,7 +43,7 @@ jest.mock("@/auth/tokens", () => ({
 
 import { router } from "expo-router";
 import { handleTagUrl, __resetDeduper } from "@/nfc/handleTagUrl";
-import { flushQueue } from "@/offline/sync";
+import { cancelScheduledRetry, flushQueue } from "@/offline/sync";
 import { useSessionStore } from "@/store/session";
 import { useUiStore } from "@/store/ui";
 
@@ -69,6 +69,8 @@ beforeAll(() => {
 });
 
 const tag = (d: string) => `https://links.lavi.example/t?d=${d}&c=x`;
+
+afterAll(() => cancelScheduledRetry());
 
 beforeEach(async () => {
   online = true;

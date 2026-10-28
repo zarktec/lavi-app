@@ -23,7 +23,8 @@ export function setRemoteTexts(texts: Record<string, string> | undefined) {
 export function translate(key: string, options?: Record<string, unknown>): string {
   const remote = useRemoteTexts.getState().texts[key];
   if (remote) {
-    return remote.replace(/\{\{(\w+)\}\}/g, (_, k: string) => String(options?.[k] ?? ""));
+    // El backend usa {product}; también se admite {{product}}.
+    return remote.replace(/\{\{(\w+)\}\}|\{(\w+)\}/g, (_, a: string, b: string) => String(options?.[a ?? b] ?? ""));
   }
   return i18next.t(key, options) as string;
 }

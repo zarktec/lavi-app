@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 import type { Dose } from "@/api/types";
 import { useT } from "@/i18n";
-import { deviceTimeZone } from "@/lib/time";
+import { deviceTimeZone, formatTime } from "@/lib/time";
 import { displayStatus, type DoseDisplayStatus } from "@/offline/usePendingScans";
 import { Chip, Text } from "./index";
 import { colors, MIN_TOUCH, radius, spacing } from "./theme";
@@ -17,27 +17,27 @@ const STATUS_COLOR: Record<DoseDisplayStatus, string> = {
   on_time: colors.success,
   late: colors.late,
   missed: colors.missed,
-  pending: colors.pending,
+  scheduled: colors.pending,
   pending_sync: colors.primary,
 };
 const STATUS_TONE = {
   on_time: "success",
   late: "warning",
   missed: "danger",
-  pending: "neutral",
+  scheduled: "neutral",
   pending_sync: "info",
 } as const;
 const STATUS_KEY: Record<DoseDisplayStatus, string> = {
   on_time: "history.onTime",
   late: "history.late",
   missed: "history.missed",
-  pending: "history.pending",
+  scheduled: "history.pending",
   pending_sync: "history.pendingSync",
 };
 
 /** Peor estado del día para colorear la celda. */
 function worst(statuses: DoseDisplayStatus[]): DoseDisplayStatus {
-  for (const s of ["missed", "late", "pending_sync", "pending"] as const) {
+  for (const s of ["missed", "late", "pending_sync", "scheduled"] as const) {
     if (statuses.includes(s)) return s;
   }
   return "on_time";
@@ -54,7 +54,7 @@ export function DoseCalendar({
   const byDay = useMemo(() => {
     const map = new Map<string, { dose: Dose; status: DoseDisplayStatus }[]>();
     for (const dose of doses) {
-      const key = dayKey(new Date(dose.scheduled_at));
+      const key = dayKey(new Date(dose.window_start));
       const list = map.get(key) ?? [];
       list.push({ dose, status: displayStatus(dose, pending) });
       map.set(key, list);
@@ -62,7 +62,7 @@ export function DoseCalendar({
     return map;
   }, [doses, pending]);
 
-  const firstDose = doses[0] ? new Date(doses[0].scheduled_at) : new Date();
+  const firstDose = doses[0] ? new Date(doses[0].window_start) : new Date();
   const [cursor, setCursor] = useState(() => new Date(Date.now()));
   const [selected, setSelected] = useState<string>(dayKey(new Date()));
   const monthStart = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
@@ -160,11 +160,7 @@ export function DoseCalendar({
           selectedDoses.map(({ dose, status }) => (
             <View key={dose.id} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <Text>
-                {new Date(dose.scheduled_at).toLocaleTimeString("es-CO", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                  timeZone: deviceTimeZone(),
-                })}
+                {formatTime(dose.window_start)} – {formatTime(dose.window_end)}
               </Text>
               <Chip tone={STATUS_TONE[status]} label={t(STATUS_KEY[status])} />
             </View>

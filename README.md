@@ -65,26 +65,39 @@ e2e/            Flujos Maestro
 - **Privacidad**: Sentry sin datos personales (solo id interno); analítica detrás del consentimiento
   (`src/analytics`, proveedor pendiente de definir).
 
-## Contrato de API (importante)
+## Contrato de API
 
-`lavi-admin` aún no publica su OpenAPI `/v1`, así que `api/openapi.yaml` es un **borrador derivado de la
-especificación de la app**. Cuando el backend publique el suyo, reemplazar el archivo y ejecutar
-`npm run api:generate`; ante cualquier diferencia manda la especificación del backend. Supuestos a confirmar
-con el backend:
+`lavi-admin` (backend, rama `claude/pensive-fermi-fzsq8u`) **todavía no publica un OpenAPI**: su contrato vive en
+el código (`backend/src/app/v1/**` y `backend/src/lib/*`). `api/openapi.yaml` está **derivado de ese código** y de
+él se genera `src/api/schema.d.ts` (`npm run api:generate`). Cuando el backend publique su especificación oficial,
+se reemplaza el archivo y se regenera; ante cualquier diferencia manda la del backend.
 
-1. Forma de `GET /v1/treatments/:id` (`doses` con `window_opens_at/closes_at`, `reminder_nudges[].offset_minutes`,
-   `schedule_changes_left`, `ending_soon`) y de `GET /v1/config/app` (`min_app_version`, `texts`,
-   `repurchase_reminder_days`, `support_email`, `privacy_policy_url`, `terms_url`, `store_urls`).
-2. Cuerpo de `POST /v1/auth/session` (`shopify_access_token`, `shopify_id_token`, `privacy_policy_accepted`, `timezone`).
-3. Código de error cuando vence el token de activación (la app trata 410 o un `code` con «expired/activation»).
-4. Paginación del libro de puntos (`cursor` / `next_cursor`).
+Puntos del backend que la app respeta tal cual:
+
+- Dosis `window_start`/`window_end` con estados `scheduled | on_time | late | missed`; `config.reminder_nudges` son
+  minutos desde la apertura de la ventana; `repurchase_suggested` y `schedule_changes_left` los calcula el backend.
+- Escaneo: `next_dose`, `opens_at`, `bonus_points`, `treatment_completed`, `suggested_times`, `variant`;
+  `treatment_finished` no trae resumen (se lee del tratamiento por `treatment_id`).
+- Sesión: `data_consent` al crear sesión, `X-Refresh-Token` para cerrarla; dispositivos con `push_token`.
+- Activación vencida → `400 activation_token_invalid`; cambios de horario agotados → `409 schedule_change_limit`.
+- Textos remotos: `notification_texts` (`reminder_*`, `nudge_body`, `backup_*`, `repurchase_*`, con `{product}`).
+
+Brechas del backend frente a la especificación de la app (la app las resuelve así por ahora):
+
+1. `GET /v1/points` no trae la **racha**; solo llega en el resultado de la lectura. Inicio muestra saldo y progreso.
+2. `GET /v1/config/app` no trae **correo de soporte, política de datos ni términos**: van por variables de entorno
+   (`LAVI_SUPPORT_EMAIL`, `LAVI_PRIVACY_URL`, `LAVI_TERMS_URL`).
+3. `GET /v1/config/app` no trae `repurchase_reminder_days`: se usa `repurchase_suggested` de cada tratamiento.
+4. No hay resumen de cumplimiento en `treatment_finished`: se usa `progress` del tratamiento.
+5. El cambio de horario no devuelve «desde cuándo rige»: se calcula con `schedule_change_min_notice_hours`.
+6. El repositorio `lavi-admin` incluye una carpeta `mobile/` duplicada; la app oficial es este repositorio.
 
 ## Verificar en teléfono físico (no se puede probar en simuladores ni en este entorno)
 
 - NFC en segundo plano y por botón en iOS (XS o posterior) y Android; vibración; ventana de 30 s.
 - Universal Links / App Links: requiere que el backend sirva `apple-app-site-association` (con el Team ID) y
   `assetlinks.json` (con la huella SHA-256) en `LAVI_LINK_DOMAIN`.
-- Login real de Shopify: registrar `lavi://auth/callback` como URI de redirección del cliente público; la
+- Login real de Shopify: registrar `lavi://auth/callback` (el backend documenta `tumarca://auth/callback`: unificar el esquema) como URI de redirección del cliente público; la
   autenticación del carrito (`buyerIdentity.customerAccessToken`) y el descubrimiento OAuth
   (`/.well-known/openid-configuration`) deben confirmarse contra la tienda de desarrollo.
 - Notificaciones locales y push de respaldo, tarea en segundo plano, Checkout Kit con código de canje.

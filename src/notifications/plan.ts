@@ -11,28 +11,29 @@ export type PlannedNotification = {
 };
 
 /**
- * Calcula qué notificaciones programar: solo dosis pendientes de los próximos
- * días, la apertura de la ventana y cada insistencia (`reminder_nudges`, en
- * minutos tras la apertura), hasta un máximo de 50 ordenadas por hora.
+ * Calcula qué notificaciones programar: solo dosis programadas de los próximos
+ * días, la apertura de la ventana y cada insistencia (`config.reminder_nudges`,
+ * en minutos desde la apertura), hasta un máximo de 50 ordenadas por hora.
  */
 export function planReminders(
   doses: Dose[],
-  nudges: { offset_minutes: number }[],
+  nudges: number[],
   now: Date = new Date(),
   horizonDays = HORIZON_DAYS,
   max = MAX_SCHEDULED,
 ): PlannedNotification[] {
   const horizon = now.getTime() + horizonDays * 24 * 60 * 60 * 1000;
+  const offsets = [...new Set(nudges)].filter((n) => n > 0);
   const out: PlannedNotification[] = [];
   for (const dose of doses) {
-    if (dose.status !== "pending") continue;
-    const opens = new Date(dose.window_opens_at).getTime();
-    const closes = new Date(dose.window_closes_at).getTime();
+    if (dose.status !== "scheduled") continue;
+    const opens = new Date(dose.window_start).getTime();
+    const closes = new Date(dose.window_end).getTime();
     if (opens <= horizon && opens > now.getTime()) {
       out.push({ doseId: dose.id, at: new Date(opens), kind: "dose" });
     }
-    for (const n of nudges) {
-      const at = opens + n.offset_minutes * 60_000;
+    for (const offset of offsets) {
+      const at = opens + offset * 60_000;
       if (at > now.getTime() && at <= horizon && at < closes) {
         out.push({ doseId: dose.id, at: new Date(at), kind: "nudge" });
       }

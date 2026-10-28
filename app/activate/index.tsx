@@ -10,9 +10,9 @@ import { Banner, Button, Card, Screen, Text } from "@/ui";
 import { normalizeTimes, ScheduleEditor, timesValid } from "@/ui/ScheduleEditor";
 import { spacing } from "@/ui/theme";
 
-/** El token de activación vence: el backend lo rechaza y se pide volver a leer el frasco. */
+/** El token de activación vence (15 min por defecto): el backend responde `activation_token_invalid` y se pide volver a leer el frasco. */
 function isExpired(e: unknown) {
-  return e instanceof ApiError && (e.status === 410 || /expired|activation/i.test(e.code));
+  return e instanceof ApiError && e.code === "activation_token_invalid";
 }
 
 export default function Activate() {
@@ -20,7 +20,7 @@ export default function Activate() {
   const outcome = useUiStore((s) => s.outcome);
   const online = useUiStore((s) => s.online);
   const response = outcome?.kind === "api" ? outcome.response : null;
-  const [times, setTimes] = useState<string[]>(response?.suggested_schedule ?? ["08:00"]);
+  const [times, setTimes] = useState<string[]>(response?.suggested_times ?? ["08:00"]);
   const [expired, setExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const activate = useActivateTreatment();
@@ -38,7 +38,7 @@ export default function Activate() {
   const confirm = () => {
     setError(null);
     activate.mutate(
-      { activation_token: response.activation_token as string, schedule_times: normalizeTimes(times) },
+      { activation_token: response.activation_token as string, reminder_times: normalizeTimes(times) },
       {
         onSuccess: () => {
           track({ name: "treatment_activated" });
@@ -59,10 +59,10 @@ export default function Activate() {
       <Card style={{ gap: spacing.xs }}>
         <Text variant="caption" muted>{t("activate.product")}</Text>
         <Text variant="heading">{response.product?.name}</Text>
-        {response.product?.presentation ? (
+        {response.variant ? (
           <>
             <Text variant="caption" muted>{t("activate.presentation")}</Text>
-            <Text variant="bodyStrong">{response.product.presentation.name}</Text>
+            <Text variant="bodyStrong">{response.variant.name}</Text>
           </>
         ) : null}
       </Card>

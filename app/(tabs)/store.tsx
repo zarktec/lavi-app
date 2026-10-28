@@ -3,9 +3,8 @@ import { Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { isEndingSoon, useActiveTreatment } from "@/api/active";
 import { track } from "@/analytics";
-import { useRemoteConfig } from "@/config/useRemoteConfig";
 import { useT } from "@/i18n";
-import { fetchProducts } from "@/shopify/storefront";
+import { fetchProducts, toVariantGid } from "@/shopify/storefront";
 import { useCheckout } from "@/shopify/useCheckout";
 import { useUiStore } from "@/store/ui";
 import { Banner, Button, Card, Chip, Loading, Screen, Text } from "@/ui";
@@ -14,15 +13,14 @@ import { radius, spacing } from "@/ui/theme";
 
 export default function Store() {
   const t = useT();
-  const { config } = useRemoteConfig();
   const { treatment } = useActiveTreatment();
   const online = useUiStore((s) => s.online);
   const { highlight } = useLocalSearchParams<{ highlight?: string }>();
   const products = useQuery({ queryKey: ["store", "products"], queryFn: () => fetchProducts() });
   const { buy, busy, error } = useCheckout();
 
-  const inUseVariant = treatment?.product.presentation?.shopify_variant_id ?? highlight;
-  const endingSoon = isEndingSoon(treatment, config.repurchase_reminder_days ?? 7);
+  const inUseVariant = toVariantGid(treatment?.variant.shopify_variant_id) ?? highlight;
+  const endingSoon = isEndingSoon(treatment);
 
   if (products.isLoading && !products.data) return <Loading />;
 

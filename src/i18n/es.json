@@ -64,6 +64,7 @@
     "opensIn": "Faltan {{d}} d {{h}} h {{m}} min",
     "opensInShort": "Faltan {{h}} h {{m}} min",
     "streak": "Racha",
+    "progress": "A tiempo",
     "streakDays": "{{count}} aplicaciones seguidas",
     "balance": "Saldo",
     "scan": "Escanear mi frasco",
@@ -89,7 +90,7 @@
     "missed": "Perdida",
     "pending": "Pendiente",
     "pendingSync": "Pendiente de sincronizar",
-    "adherence": "Cumplimiento {{percent}}%",
+    "adherence": "{{onTime}} de {{total}} aplicaciones a tiempo",
     "noDosesDay": "Sin aplicaciones este día.",
     "changeSchedule": "Cambiar horarios"
   },
@@ -106,7 +107,24 @@
     "codeActive": "Vigente",
     "codeUsed": "Usado",
     "codeExpired": "Vencido",
-    "loadMore": "Ver más"
+    "loadMore": "Ver más",
+    "codePending": "En proceso",
+    "codeFailed": "No generado",
+    "valueCop": "Equivale a",
+    "reasons": {
+      "dose_on_time": "Aplicación a tiempo",
+      "streak_bonus": "Bono de racha",
+      "welcome": "Bienvenida",
+      "missed_dose": "Aplicación perdida",
+      "penalty_reversal": "Reversa de penalización",
+      "late_dose_penalty_reversal": "Reversa por aplicación tardía",
+      "redemption": "Canje de puntos",
+      "redemption_reversal": "Canje revertido",
+      "redemption_expired_refund": "Código vencido, puntos devueltos",
+      "expiration": "Puntos vencidos",
+      "manual_adjustment": "Ajuste manual"
+    },
+    "unknownReason": "Movimiento"
   },
   "store": {
     "title": "Tienda",
@@ -172,7 +190,9 @@
     "noPendingTitle": "No tienes aplicaciones pendientes ahora",
     "noPendingBody": "Tu próxima dosis es el {{time}}.",
     "finishedTitle": "¡Tratamiento completo!",
-    "finishedBody": "Cumpliste {{onTime}} de {{total}} aplicaciones a tiempo ({{percent}}%).",
+    "finishedBody": "Cumpliste {{onTime}} de {{total}} aplicaciones a tiempo.",
+    "finishedBodyPlain": "Completaste todas tus aplicaciones. ¡Gracias por tu constancia!",
+    "completedNote": "¡Completaste tu tratamiento!",
     "finishedCta": "Recomprar",
     "rejectedTitle": "No pudimos verificar este frasco",
     "rejectedBody": "Si crees que es un error, escríbenos.",
@@ -216,6 +236,13 @@
     "confirmBody": "Se descontarán {{cost}} puntos de tu saldo.",
     "confirm": "Canjear",
     "notEnough": "No tienes puntos suficientes",
+    "minPoints": "Necesitas al menos {{count}} puntos para canjear.",
+    "reward": {
+      "percentage": "{{value}}% de descuento",
+      "fixed_amount": "{{value}} de descuento",
+      "free_shipping": "Envío gratis",
+      "free_product": "Producto gratis"
+    },
     "empty": "No hay opciones de canje disponibles.",
     "codeTitle": "¡Listo! Este es tu código",
     "useNow": "Usar ahora",
@@ -230,9 +257,11 @@
   "notifications": {
     "channel": "Recordatorios de aplicación",
     "doseTitle": "Es hora de tu aplicación",
-    "doseBody": "Acerca tu frasco al teléfono para registrarla.",
+    "doseBody": "Aplica {{product}} y acerca tu teléfono al frasco para sumar puntos.",
     "nudgeTitle": "¿Ya te aplicaste?",
-    "nudgeBody": "Aún estás a tiempo: acerca tu frasco para registrar tu aplicación.",
+    "nudgeBody": "Aún no registras tu aplicación de {{product}}. ¡Acerca tu teléfono al frasco!",
+    "backupTitle": "¿Ya te aplicaste {{product}}?",
+    "backupBody": "Tu ventana sigue abierta: acerca el teléfono al frasco para registrar tu dosis.",
     "syncedTitle": "Lectura registrada",
     "syncFailedTitle": "No pudimos registrar una lectura"
   },

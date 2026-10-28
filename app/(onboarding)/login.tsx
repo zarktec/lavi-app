@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { signIn } from "@/auth/session";
 import { LoginCancelledError } from "@/auth/shopifyAuth";
-import { useRemoteConfig } from "@/config/useRemoteConfig";
+import { env } from "@/config/env";
 import { useT } from "@/i18n";
 import { captureError } from "@/lib/sentry";
 import { Banner, Button, Screen, Text } from "@/ui";
@@ -13,7 +13,6 @@ import { colors, MIN_TOUCH, spacing } from "@/ui/theme";
 
 export default function Login() {
   const t = useT();
-  const { config } = useRemoteConfig();
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,11 +57,11 @@ export default function Login() {
           />
           <Text variant="caption" style={{ flex: 1 }}>{t("login.analytics")}</Text>
         </Pressable>
-        {config.privacy_policy_url ? (
+        {env.privacyUrl ? (
           <Button
             variant="ghost"
             label={t("login.policyLink")}
-            onPress={() => WebBrowser.openBrowserAsync(config.privacy_policy_url as string)}
+            onPress={() => WebBrowser.openBrowserAsync(env.privacyUrl)}
           />
         ) : null}
         <Button label={t("login.button")} loading={busy} onPress={onLogin} />

@@ -3,7 +3,6 @@ import { router } from "expo-router";
 import { endpoints } from "@/api/endpoints";
 import { setAuthFailureHandler } from "@/api/client";
 import { queryClient, sqlitePersister } from "@/api/queryClient";
-import { APP_VERSION } from "@/config/env";
 import { kvGet, kvSet } from "@/lib/db";
 import { deviceTimeZone } from "@/lib/time";
 import { setSentryUser } from "@/lib/sentry";
@@ -52,9 +51,8 @@ export async function registerPushDevice() {
   if ((await getToken("pushToken")) === token && (await getToken("deviceId"))) return;
   try {
     const device = await endpoints.registerDevice({
-      expo_push_token: token,
+      push_token: token,
       platform: Platform.OS === "ios" ? "ios" : "android",
-      app_version: APP_VERSION,
     });
     await setToken("pushToken", token);
     await setToken("deviceId", device.id);
@@ -68,12 +66,12 @@ export async function signIn(opts: { acceptedAnalytics: boolean }) {
   const shopify = await loginWithShopify();
   const tokens = await endpoints.createSession({
     shopify_access_token: shopify.accessToken,
-    shopify_id_token: shopify.idToken,
-    privacy_policy_accepted: true,
+    data_consent: true,
     timezone: deviceTimeZone(),
   });
   await setToken("access", tokens.access_token);
   await setToken("refresh", tokens.refresh_token);
+  if (tokens.needs_data_consent) await endpoints.updateMe({ accept_data_policy: true });
   await setAnalyticsConsent(opts.acceptedAnalytics);
   await completeOnboarding();
 
@@ -110,9 +108,10 @@ export async function localSignOut() {
 
 export async function signOut() {
   const deviceId = await getToken("deviceId");
+  const refresh = await getToken("refresh");
   try {
     if (deviceId) await endpoints.deleteDevice(deviceId);
-    await endpoints.deleteSession();
+    if (refresh) await endpoints.deleteSession(refresh);
   } catch {
     // aunque falle la red, la sesión local se cierra
   }

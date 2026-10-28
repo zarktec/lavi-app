@@ -18,7 +18,7 @@ async function loadActiveTreatment(): Promise<Treatment | null | undefined> {
       queryFn: endpoints.treatments,
       staleTime: 0,
     });
-    const active = list.items.find((t) => t.status === "active");
+    const active = list.treatments.find((t) => t.status === "active");
     if (!active) return null;
     return await queryClient.fetchQuery({
       queryKey: ["treatments", active.id],
@@ -26,10 +26,10 @@ async function loadActiveTreatment(): Promise<Treatment | null | undefined> {
       staleTime: 0,
     });
   } catch {
-    const list = queryClient.getQueryData<{ items: { id: string; status: string }[] }>([
+    const list = queryClient.getQueryData<{ treatments: { id: string; status: string }[] }>([
       "treatments",
     ]);
-    const active = list?.items.find((t) => t.status === "active");
+    const active = list?.treatments.find((t) => t.status === "active");
     if (!list) return undefined;
     if (!active) return null;
     return queryClient.getQueryData<Treatment>(["treatments", active.id]) ?? undefined;
@@ -49,12 +49,13 @@ async function run() {
   if (!treatment) return;
   await ensureAndroidChannel();
 
-  const plan = planReminders(treatment.doses, treatment.reminder_nudges);
+  const plan = planReminders(treatment.doses, treatment.config?.reminder_nudges ?? []);
+  const vars = { product: treatment.product.name };
   for (const item of plan) {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: translate(item.kind === "dose" ? "notifications.doseTitle" : "notifications.nudgeTitle"),
-        body: translate(item.kind === "dose" ? "notifications.doseBody" : "notifications.nudgeBody"),
+        title: translate(item.kind === "dose" ? "notifications.doseTitle" : "notifications.nudgeTitle", vars),
+        body: translate(item.kind === "dose" ? "notifications.doseBody" : "notifications.nudgeBody", vars),
         sound: "default",
         data: { dose_id: item.doseId, kind: item.kind, open: "scan" },
       },

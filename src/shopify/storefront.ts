@@ -32,6 +32,12 @@ async function gql<T>(
   return json.data;
 }
 
+/** El backend guarda el id de la variante; Storefront API pide el GID completo. */
+export function toVariantGid(id: string | null | undefined): string | undefined {
+  if (!id) return undefined;
+  return id.startsWith("gid://") ? id : `gid://shopify/ProductVariant/${id}`;
+}
+
 export type StoreVariant = {
   id: string;
   title: string;

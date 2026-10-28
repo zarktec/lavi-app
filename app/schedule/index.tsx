@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useActiveTreatment } from "@/api/active";
 import { useChangeSchedule } from "@/api/hooks";
 import { ApiError } from "@/api/errors";
-import type { ScheduleChange } from "@/api/types";
 import { useT } from "@/i18n";
 import { formatDateTime } from "@/lib/time";
 import { useUiStore } from "@/store/ui";
@@ -17,28 +16,31 @@ export default function Schedule() {
   const online = useUiStore((s) => s.online);
   const change = useChangeSchedule(active?.id ?? "");
   const [edited, setEdited] = useState<string[] | null>(null);
-  const [saved, setSaved] = useState<ScheduleChange | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (isLoading || !treatment || !active) return <Loading />;
-  const times = edited ?? treatment.schedule_times;
+  const times = edited ?? treatment.reminder_times;
   const setTimes = setEdited;
 
-  const left = saved?.changes_left ?? treatment.schedule_changes_left;
-  const noneLeft = left !== undefined && left <= 0;
+  const left = treatment.schedule_changes_left;
+  const saved = savedAt !== null;
+  // El cambio rige tras el aviso mínimo que define la configuración del tratamiento.
+  const effectiveFrom = new Date((savedAt ?? 0) + (treatment.config?.schedule_change_min_notice_hours ?? 0) * 3_600_000);
+  const noneLeft = left <= 0;
 
   return (
     <Screen edges="none">
       <Text variant="title">{t("schedule.title")}</Text>
       <Card style={{ gap: spacing.xs }}>
         <Text variant="caption" muted>{t("schedule.current")}</Text>
-        <Text variant="heading">{(saved?.schedule_times ?? treatment.schedule_times).join("  ·  ")}</Text>
+        <Text variant="heading">{treatment.reminder_times.join("  ·  ")}</Text>
       </Card>
 
       {saved ? (
         <>
           <Banner tone="success" text={t("schedule.saved")} />
-          <Text>{t("schedule.effective", { date: formatDateTime(saved.effective_from) })}</Text>
+          <Text>{t("schedule.effective", { date: formatDateTime(effectiveFrom) })}</Text>
         </>
       ) : (
         <>
@@ -47,9 +49,7 @@ export default function Schedule() {
         </>
       )}
 
-      {left !== undefined ? (
-        <Text muted>{noneLeft ? t("schedule.noChangesLeft") : t("schedule.changesLeft", { count: left })}</Text>
-      ) : null}
+      <Text muted>{noneLeft ? t("schedule.noChangesLeft") : t("schedule.changesLeft", { count: left })}</Text>
       {error ? <Banner tone="danger" text={error} /> : null}
       {!online ? <Banner tone="info" text={t("common.needsConnection")} /> : null}
 
@@ -63,7 +63,7 @@ export default function Schedule() {
           onPress={() => {
             setError(null);
             change.mutate(normalizeTimes(times), {
-              onSuccess: setSaved,
+              onSuccess: () => setSavedAt(Date.now()),
               onError: (e) => setError(e instanceof ApiError && e.message ? e.message : t("common.genericError")),
             });
           }}

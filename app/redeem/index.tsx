@@ -7,9 +7,10 @@ import { useActiveTreatment } from "@/api/active";
 import { ApiError } from "@/api/errors";
 import { newIdempotencyKey, usePoints, useRedeem, useRedemptionOptions } from "@/api/hooks";
 import type { Redemption, RedemptionOption } from "@/api/types";
+import { rewardLabel } from "@/lib/reward";
 import { track } from "@/analytics";
 import { useT } from "@/i18n";
-import { fetchProducts } from "@/shopify/storefront";
+import { fetchProducts, toVariantGid } from "@/shopify/storefront";
 import { useCheckout } from "@/shopify/useCheckout";
 import { useUiStore } from "@/store/ui";
 import { Banner, Button, Card, Loading, Screen, Text } from "@/ui";
@@ -33,33 +34,32 @@ export default function RedeemScreen() {
   const key = useRef<string | null>(null);
 
   if (options.isLoading && !options.data) return <Loading />;
-  const balance = points.data?.balance ?? 0;
+  const balance = options.data?.balance ?? points.data?.balance ?? 0;
 
   if (result) {
-    const variant =
-      treatment?.product.presentation?.shopify_variant_id ?? products.data?.[0]?.variants[0]?.id;
+    const variant = toVariantGid(treatment?.variant.shopify_variant_id) ?? products.data?.[0]?.variants[0]?.id;
     return (
       <Screen edges="none" style={{ justifyContent: "center" }}>
         <Text variant="title" style={{ textAlign: "center" }}>{t("redeem.codeTitle")}</Text>
         <Card style={{ alignItems: "center", gap: spacing.sm }}>
-          <Text variant="display" selectable accessibilityLabel={`Código ${result.code}`}>{result.code}</Text>
-          <Text muted>{result.option.name}</Text>
+          <Text variant="display" selectable accessibilityLabel={`Código ${result.code ?? ""}`}>{result.code ?? "—"}</Text>
+          <Text muted>{result.option_name}</Text>
         </Card>
         {checkoutError ? <Banner tone="danger" text={t("store.checkoutError")} /> : null}
         <Button
           label={t("redeem.useNow")}
           loading={buying}
-          disabled={!variant || !online}
+          disabled={!variant || !result.code || !online}
           onPress={() => {
             track({ name: "repurchase_started", source: "redemption" });
-            if (variant) void buy(variant, result.code);
+            if (variant && result.code) void buy(variant, result.code);
           }}
         />
         <Button
           variant="secondary"
           label={copied ? t("redeem.copied") : t("redeem.copyCode")}
           onPress={async () => {
-            await Clipboard.setStringAsync(result.code);
+            await Clipboard.setStringAsync(result.code ?? "");
             setCopied(true);
           }}
         />
@@ -74,9 +74,9 @@ export default function RedeemScreen() {
         <Text variant="title">{t("redeem.confirmTitle")}</Text>
         <Card style={{ gap: spacing.xs }}>
           <Text variant="heading">{selected.name}</Text>
-          {selected.description ? <Text muted>{selected.description}</Text> : null}
+          <Text muted>{rewardLabel(selected, t)}</Text>
           <Text>{t("redeem.youReceive", { name: selected.name })}</Text>
-          <Text variant="bodyStrong">{t("redeem.confirmBody", { cost: selected.cost_points })}</Text>
+          <Text variant="bodyStrong">{t("redeem.confirmBody", { cost: selected.points_cost })}</Text>
         </Card>
         {error ? <Banner tone="danger" text={error} /> : null}
         {!online ? <Banner tone="info" text={t("common.needsConnection")} /> : null}
@@ -116,14 +116,17 @@ export default function RedeemScreen() {
     <Screen edges="none">
       <Text variant="title">{t("redeem.title")}</Text>
       <Text muted>{t("home.balance")}: {balance} {t("common.points")}</Text>
-      {options.data?.items.length === 0 ? <Text muted>{t("redeem.empty")}</Text> : null}
-      {options.data?.items.map((o) => {
-        const enough = balance >= o.cost_points;
+      {options.data?.options.length === 0 ? <Text muted>{t("redeem.empty")}</Text> : null}
+      {options.data && balance < options.data.min_points_to_redeem ? (
+        <Text muted>{t("redeem.minPoints", { count: options.data.min_points_to_redeem })}</Text>
+      ) : null}
+      {options.data?.options.map((o) => {
+        const enough = o.affordable;
         return (
           <Pressable
             key={o.id}
             accessibilityRole="button"
-            accessibilityLabel={`${o.name}, ${t("redeem.cost", { count: o.cost_points })}`}
+            accessibilityLabel={`${o.name}, ${t("redeem.cost", { count: o.points_cost })}`}
             accessibilityState={{ disabled: !enough || !online }}
             disabled={!enough || !online}
             onPress={() => {
@@ -135,9 +138,9 @@ export default function RedeemScreen() {
             <Card style={{ gap: spacing.xs }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <Text variant="bodyStrong" style={{ flex: 1 }}>{o.name}</Text>
-                <Text variant="bodyStrong" color={colors.primary}>{t("redeem.cost", { count: o.cost_points })}</Text>
+                <Text variant="bodyStrong" color={colors.primary}>{t("redeem.cost", { count: o.points_cost })}</Text>
               </View>
-              {o.description ? <Text variant="caption" muted>{o.description}</Text> : null}
+              <Text variant="caption" muted>{rewardLabel(o, t)}</Text>
               {!enough ? <Text variant="caption" color={colors.danger}>{t("redeem.notEnough")}</Text> : null}
             </Card>
           </Pressable>

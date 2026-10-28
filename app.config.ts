@@ -109,6 +109,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     apiUrl: API_URL,
     linkDomain: LINK_DOMAIN,
     sentryDsn: process.env.LAVI_SENTRY_DSN ?? "",
+    // El backend no publica estos datos en GET /v1/config/app: llegan por variables de entorno.
+    supportEmail: process.env.LAVI_SUPPORT_EMAIL ?? "",
+    privacyUrl: process.env.LAVI_PRIVACY_URL ?? "",
+    termsUrl: process.env.LAVI_TERMS_URL ?? "",
     shopify: {
       storeDomain: SHOPIFY_STORE_DOMAIN,
       storefrontToken: STOREFRONT_TOKEN,

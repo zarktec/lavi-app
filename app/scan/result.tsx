@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { Linking, View } from "react-native";
-import { useRemoteConfig } from "@/config/useRemoteConfig";
+import { useTreatment } from "@/api/hooks";
+import { env } from "@/config/env";
 import { useT } from "@/i18n";
 import { formatTime, formatDateTime } from "@/lib/time";
 import { scanNav } from "@/nfc/nav";
@@ -36,9 +37,11 @@ function closeAnd(path: "/store" | "/home") {
 
 export default function ScanResult() {
   const t = useT();
-  const { config } = useRemoteConfig();
   const outcome = useUiStore((s) => s.outcome);
   const view = outcome ? outcomeView(outcome) : null;
+  // `treatment_finished` no trae el resumen: se toma del tratamiento (progreso de dosis).
+  const finishedId = outcome?.kind === "api" ? outcome.response.treatment_id : undefined;
+  const finished = useTreatment(view === "finished" ? (finishedId ?? undefined) : undefined);
 
   useEffect(() => {
     scanNav.resultScreenOpen = true;
@@ -63,30 +66,30 @@ export default function ScanResult() {
     case "recorded":
       title = t("result.recordedTitle");
       details.push(t("result.pointsEarned", { count: r?.points_earned ?? 0 }));
-      if (r?.streak_bonus) details.push(t("result.streakBonus", { count: r.streak_bonus }));
+      if (r?.bonus_points) details.push(t("result.streakBonus", { count: r.bonus_points }));
       if (r?.streak !== undefined) details.push(t("result.streakNow", { count: r.streak }));
       if (r?.balance !== undefined) details.push(t("result.balanceNow", { count: r.balance }));
-      if (r?.next_dose_at) details.push(t("result.nextDose", { time: formatDateTime(r.next_dose_at) }));
+      if (r?.next_dose) details.push(t("result.nextDose", { time: formatDateTime(r.next_dose.window_start) }));
+      if (r?.treatment_completed) details.push(t("result.completedNote"));
       break;
     case "too_early":
       title = t("result.tooEarlyTitle");
-      body = t("result.tooEarlyBody", { time: r?.window_opens_at ? formatTime(r.window_opens_at) : "" });
+      body = t("result.tooEarlyBody", { time: r?.opens_at ? formatTime(r.opens_at) : "" });
       break;
     case "late":
       title = t("result.lateTitle");
       body = t("result.lateBody");
+      if (r?.treatment_completed) details.push(t("result.completedNote"));
       break;
     case "no_pending":
       title = t("result.noPendingTitle");
-      body = r?.next_dose_at ? t("result.noPendingBody", { time: formatDateTime(r.next_dose_at) }) : undefined;
+      body = r?.next_dose ? t("result.noPendingBody", { time: formatDateTime(r.next_dose.window_start) }) : undefined;
       break;
     case "finished":
       title = t("result.finishedTitle");
-      body = t("result.finishedBody", {
-        onTime: r?.summary?.doses_on_time ?? 0,
-        total: r?.summary?.doses_total ?? 0,
-        percent: r?.summary?.adherence_percent ?? 0,
-      });
+      body = finished.data
+        ? t("result.finishedBody", { onTime: finished.data.progress.on_time, total: finished.data.progress.total })
+        : t("result.finishedBodyPlain");
       break;
     case "rejected_signature":
       title = t("result.rejectedTitle");
@@ -134,14 +137,14 @@ export default function ScanResult() {
         ) : null}
       </View>
       <View style={{ gap: spacing.sm }}>
-        {SUPPORT_VIEWS.includes(view) && config.support_email ? (
+        {SUPPORT_VIEWS.includes(view) && env.supportEmail ? (
           <Button
             variant="secondary"
             label={t("result.supportCta")}
-            onPress={() => void Linking.openURL(`mailto:${config.support_email}`)}
+            onPress={() => void Linking.openURL(`mailto:${env.supportEmail}`)}
           />
         ) : null}
-        {view === "finished" ? (
+        {view === "finished" || r?.treatment_completed || r?.repurchase_suggested ? (
           <Button label={t("result.finishedCta")} onPress={() => closeAnd("/store")} />
         ) : null}
         <Button

@@ -14,9 +14,20 @@ export default function Points() {
   const redemptions = useRedemptions();
   if (points.isLoading && !points.data) return <Loading />;
 
-  const entries = ledger.data?.pages.flatMap((p) => p.items) ?? [];
-  const toneFor = { active: "success", used: "neutral", expired: "danger" } as const;
-  const labelFor = { active: "points.codeActive", used: "points.codeUsed", expired: "points.codeExpired" } as const;
+  const entries = ledger.data?.pages.flatMap((p) => p.entries) ?? [];
+  const toneFor = { issued: "success", used: "neutral", expired: "danger", pending: "warning", failed: "danger" } as const;
+  const labelFor = {
+    issued: "points.codeActive",
+    used: "points.codeUsed",
+    expired: "points.codeExpired",
+    pending: "points.codePending",
+    failed: "points.codeFailed",
+  } as const;
+  const reasonLabel = (reason: string) => {
+    const key = `points.reasons.${reason}`;
+    const text = t(key);
+    return text === key ? t("points.unknownReason") : text;
+  };
 
   const header = (
     <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
@@ -24,30 +35,34 @@ export default function Points() {
       <ConnectionBanner updatedAt={points.dataUpdatedAt} />
       <View style={{ flexDirection: "row", gap: spacing.md }}>
         <StatCard icon="star-outline" label={t("points.balance")} value={String(points.data?.balance ?? 0)} />
-        <StatCard icon="flame-outline" label={t("home.streak")} value={String(points.data?.streak ?? 0)} />
+        <StatCard
+          icon="cash-outline"
+          label={t("points.valueCop")}
+          value={new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(points.data?.value_cop ?? 0)}
+        />
       </View>
       <Button label={t("points.redeem")} icon="gift-outline" onPress={() => router.push("/redeem")} />
 
-      {points.data?.expiring?.length ? (
+      {points.data?.upcoming_expirations?.length ? (
         <Card style={{ gap: spacing.xs }}>
           <Text variant="bodyStrong">{t("points.expiring")}</Text>
-          {points.data.expiring.map((e) => (
-            <Text key={e.expires_at} muted>
-              {t("points.expiresOn", { points: e.points, date: formatDate(e.expires_at) })}
+          {points.data.upcoming_expirations.map((e) => (
+            <Text key={e.date} muted>
+              {t("points.expiresOn", { points: e.amount, date: formatDate(`${e.date}T12:00:00Z`) })}
             </Text>
           ))}
         </Card>
       ) : null}
 
       <Text variant="heading">{t("points.codes")}</Text>
-      {redemptions.data?.items.length ? (
-        redemptions.data.items.map((r) => (
+      {redemptions.data?.redemptions.length ? (
+        redemptions.data.redemptions.map((r) => (
           <Card key={r.id} style={{ gap: spacing.xs }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <Text variant="bodyStrong" selectable>{r.code}</Text>
+              <Text variant="bodyStrong" selectable>{r.code ?? "—"}</Text>
               <Chip tone={toneFor[r.status]} label={t(labelFor[r.status])} />
             </View>
-            <Text variant="caption" muted>{r.option.name}</Text>
+            <Text variant="caption" muted>{r.option_name}</Text>
           </Card>
         ))
       ) : (
@@ -69,11 +84,11 @@ export default function Points() {
         renderItem={({ item }) => (
           <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: spacing.sm }}>
             <View style={{ flex: 1 }}>
-              <Text>{item.description ?? item.reason}</Text>
+              <Text>{reasonLabel(item.reason)}</Text>
               <Text variant="caption" muted>{formatDate(item.created_at)}</Text>
             </View>
-            <Text variant="bodyStrong" color={item.points >= 0 ? colors.success : colors.danger}>
-              {item.points >= 0 ? "+" : ""}{item.points}
+            <Text variant="bodyStrong" color={item.amount >= 0 ? colors.success : colors.danger}>
+              {item.amount >= 0 ? "+" : ""}{item.amount}
             </Text>
           </View>
         )}

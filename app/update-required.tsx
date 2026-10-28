@@ -8,7 +8,7 @@ import { colors, spacing } from "@/ui/theme";
 export default function UpdateRequired() {
   const t = useT();
   const { config } = useRemoteConfig();
-  const url = Platform.OS === "ios" ? config.store_urls?.ios : config.store_urls?.android;
+  const url = Platform.OS === "ios" ? config.links?.ios_store_url : config.links?.android_store_url;
   return (
     <Screen scroll={false} style={{ justifyContent: "center", gap: spacing.lg }}>
       <View style={{ alignItems: "center", gap: spacing.md }}>

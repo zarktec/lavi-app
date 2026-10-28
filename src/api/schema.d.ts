@@ -236,126 +236,157 @@ export interface components {
             error: {
                 code: string;
                 message: string;
+            } & {
+                [key: string]: unknown;
             };
         };
         AppConfig: {
             /** @example 1.0.0 */
             min_app_version: string;
-            /** @example 7 */
-            repurchase_reminder_days?: number;
-            support_email?: string;
-            privacy_policy_url?: string;
-            terms_url?: string;
-            store_urls?: {
-                ios?: string;
-                android?: string;
-            };
-            /** @description Textos editables por clave i18n; si faltan se usan los locales. */
-            texts?: {
+            /** @description Claves: reminder_title, reminder_body, nudge_body, backup_title, backup_body, repurchase_title, repurchase_body. Admiten {product}. */
+            notification_texts?: {
                 [key: string]: string;
+            };
+            settings?: {
+                point_value_cop?: number;
+                min_points_to_redeem?: number;
+                points_expiration_days?: number;
+                offline_scan_max_hours?: number;
+                allow_parallel_treatments?: boolean;
+            };
+            links?: {
+                ios_store_url?: string;
+                android_store_url?: string;
+                app_domain?: string;
             };
         };
         CreateSessionRequest: {
             shopify_access_token: string;
-            shopify_id_token?: string;
-            privacy_policy_accepted?: boolean;
             timezone?: string;
+            data_consent?: boolean;
         };
-        RefreshRequest: {
-            refresh_token: string;
-        };
-        AuthTokens: {
+        Tokens: {
             access_token: string;
             refresh_token: string;
             expires_in?: number;
         };
+        Session: components["schemas"]["Tokens"] & {
+            user_id: string;
+            needs_data_consent: boolean;
+        };
         RegisterDeviceRequest: {
-            expo_push_token: string;
+            push_token: string;
             /** @enum {string} */
             platform: "ios" | "android";
-            app_version?: string;
-        };
-        Device: {
-            id: string;
         };
         Me: {
             id: string;
-            name?: string | null;
             email?: string | null;
+            name?: string | null;
             phone?: string | null;
             /** @example America/Bogota */
             timezone: string;
+            /** Format: date-time */
+            data_consent_at?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+            balance: number;
         };
         UpdateMeRequest: {
-            timezone?: string;
             name?: string;
+            timezone?: string;
+            /** @enum {boolean} */
+            accept_data_policy?: true;
         };
         Product: {
             id: string;
             name: string;
-            presentation?: components["schemas"]["Presentation"];
         };
-        Presentation: {
+        Variant: {
             id: string;
             name: string;
-            /** @description GID de la variante en Shopify */
-            shopify_variant_id?: string;
+            volume_ml?: number | null;
+            shopify_variant_id?: string | null;
         };
-        ReminderNudge: {
-            /** @description Minutos después de abrir la ventana */
-            offset_minutes: number;
+        DoseWindow: {
+            id: string;
+            /** Format: date-time */
+            window_start: string;
+            /** Format: date-time */
+            window_end: string;
         };
         Dose: {
             id: string;
             /** Format: date-time */
-            scheduled_at: string;
+            window_start: string;
             /** Format: date-time */
-            window_opens_at: string;
-            /** Format: date-time */
-            window_closes_at: string;
+            window_end: string;
             /** @enum {string} */
-            status: "pending" | "on_time" | "late" | "missed";
+            status: "scheduled" | "on_time" | "late" | "missed";
             /** Format: date-time */
             recorded_at?: string | null;
         };
+        TreatmentConfig: {
+            id?: string;
+            version?: number;
+            doses_per_day?: number;
+            duration_days?: number;
+            points_per_dose?: number;
+            window_minutes_before?: number;
+            window_minutes_after?: number;
+            /** @description Minutos desde la apertura de la ventana en que se insiste */
+            reminder_nudges?: number[];
+            schedule_change_min_notice_hours?: number;
+            schedule_change_max_count?: number;
+            schedule_change_period_days?: number;
+        };
         TreatmentSummary: {
             id: string;
+            tag_uid?: string;
             /** @enum {string} */
-            status: "active" | "finished";
+            status: "active" | "finished" | "cancelled";
+            /** Format: date */
+            start_date: string;
+            /** Format: date */
+            end_date: string;
+            reminder_times: string[];
+            points_earned?: number;
             product: components["schemas"]["Product"];
+            variant: components["schemas"]["Variant"];
+            config?: components["schemas"]["TreatmentConfig"];
+            progress: {
+                total: number;
+                on_time: number;
+                late: number;
+                missed: number;
+            };
+            schedule_changes_left: number;
+            days_left: number;
+            repurchase_suggested: boolean;
             /** Format: date-time */
-            started_at: string;
+            created_at?: string;
             /** Format: date-time */
-            ends_at?: string | null;
-            next_dose?: components["schemas"]["Dose"] | null;
-            adherence_percent?: number;
+            finished_at?: string | null;
         };
         Treatment: components["schemas"]["TreatmentSummary"] & {
-            schedule_times: string[];
             doses: components["schemas"]["Dose"][];
-            reminder_nudges: components["schemas"]["ReminderNudge"][];
-            schedule_changes_left?: number;
-            ending_soon?: boolean;
         };
         ActivateTreatmentRequest: {
             activation_token: string;
-            schedule_times: string[];
+            reminder_times?: string[];
+            /** Format: date */
+            start_date?: string;
         };
         ChangeScheduleRequest: {
-            schedule_times: string[];
-        };
-        ScheduleChange: {
-            schedule_times: string[];
-            /** Format: date-time */
-            effective_from: string;
-            changes_left: number;
-            /** Format: date-time */
-            period_ends_at?: string;
+            reminder_times: string[];
         };
         ScanRequest: {
             tag_url: string;
-            /** @description ISO 8601 con zona */
-            device_time: string;
+            /**
+             * Format: date-time
+             * @description ISO 8601 con zona
+             */
+            device_time?: string;
             offline?: boolean;
         };
         ScanResponse: {
@@ -363,66 +394,80 @@ export interface components {
             result: "activation_required" | "dose_recorded" | "too_early" | "late" | "no_pending_dose" | "treatment_finished" | "rejected";
             /** @enum {string} */
             reason?: "invalid_signature" | "replayed" | "owned_by_other" | "blocked" | "offline_expired";
+            idempotent_replay?: boolean;
             activation_token?: string;
+            expires_in?: number;
             product?: components["schemas"]["Product"];
-            suggested_schedule?: string[];
+            variant?: components["schemas"]["Variant"];
+            suggested_times?: string[];
+            config?: components["schemas"]["TreatmentConfig"];
             dose_id?: string;
             points_earned?: number;
-            streak_bonus?: number;
+            bonus_points?: number;
             streak?: number;
             balance?: number;
+            next_dose?: components["schemas"]["DoseWindow"] | null;
+            treatment_completed?: boolean;
             /** Format: date-time */
-            next_dose_at?: string | null;
+            opens_at?: string;
             /** Format: date-time */
-            window_opens_at?: string;
-            summary?: components["schemas"]["TreatmentSumUp"];
-        };
-        TreatmentSumUp: {
-            doses_total?: number;
-            doses_on_time?: number;
-            adherence_percent?: number;
+            window_end?: string;
+            treatment_id?: string | null;
+            repurchase_suggested?: boolean;
         };
         Points: {
             balance: number;
-            streak: number;
-            expiring?: {
-                points: number;
-                /** Format: date-time */
-                expires_at: string;
+            value_cop?: number;
+            upcoming_expirations?: {
+                /** Format: date */
+                date: string;
+                amount: number;
             }[];
         };
         LedgerEntry: {
             id: string;
-            /** @description Positivo gana, negativo canjea */
-            points: number;
+            /** @description Positivo abona, negativo descuenta */
+            amount: number;
             reason: string;
-            description?: string;
+            reference_type?: string | null;
+            /** Format: date-time */
+            expires_at?: string | null;
             /** Format: date-time */
             created_at: string;
         };
         LedgerPage: {
-            items: components["schemas"]["LedgerEntry"][];
-            next_cursor?: string | null;
+            entries: components["schemas"]["LedgerEntry"][];
+            next_before?: string | null;
         };
         RedemptionOption: {
             id: string;
             name: string;
-            description?: string;
-            cost_points: number;
+            points_cost: number;
+            /** @enum {string} */
+            reward_type: "fixed_amount" | "percentage" | "free_product" | "free_shipping";
+            reward_value?: number | null;
+            affordable: boolean;
         };
-        CreateRedemptionRequest: {
-            option_id: string;
+        RedemptionOptions: {
+            balance: number;
+            min_points_to_redeem: number;
+            options: components["schemas"]["RedemptionOption"][];
         };
         Redemption: {
             id: string;
-            code: string;
+            option_id: string;
+            option_name: string;
+            reward_type?: string;
+            points: number;
+            code?: string | null;
             /** @enum {string} */
-            status: "active" | "used" | "expired";
-            option: components["schemas"]["RedemptionOption"];
-            /** Format: date-time */
-            created_at: string;
+            status: "pending" | "issued" | "used" | "expired" | "failed";
             /** Format: date-time */
             expires_at?: string | null;
+            /** Format: date-time */
+            used_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
         };
     };
     responses: {
@@ -484,7 +529,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthTokens"];
+                    "application/json": components["schemas"]["Session"];
                 };
             };
             default: components["responses"]["Error"];
@@ -493,7 +538,9 @@ export interface operations {
     deleteSession: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Refresh-Token": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -506,6 +553,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            default: components["responses"]["Error"];
         };
     };
     refreshSession: {
@@ -517,7 +565,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RefreshRequest"];
+                "application/json": {
+                    refresh_token: string;
+                };
             };
         };
         responses: {
@@ -527,7 +577,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthTokens"];
+                    "application/json": components["schemas"]["Tokens"];
                 };
             };
             default: components["responses"]["Error"];
@@ -546,13 +596,15 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Creado */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Device"];
+                    "application/json": {
+                        id: string;
+                    };
                 };
             };
             default: components["responses"]["Error"];
@@ -682,7 +734,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["TreatmentSummary"][];
+                        treatments: components["schemas"]["TreatmentSummary"][];
                     };
                 };
             };
@@ -701,8 +753,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Creado */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -757,7 +809,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScheduleChange"];
+                    "application/json": components["schemas"]["Treatment"];
                 };
             };
             default: components["responses"]["Error"];
@@ -786,8 +838,8 @@ export interface operations {
     listLedger: {
         parameters: {
             query?: {
-                cursor?: string;
                 limit?: number;
+                before?: string;
             };
             header?: never;
             path?: never;
@@ -821,9 +873,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        items: components["schemas"]["RedemptionOption"][];
-                    };
+                    "application/json": components["schemas"]["RedemptionOptions"];
                 };
             };
         };
@@ -844,7 +894,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        items: components["schemas"]["Redemption"][];
+                        redemptions: components["schemas"]["Redemption"][];
                     };
                 };
             };
@@ -861,12 +911,15 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateRedemptionRequest"];
+                "application/json": {
+                    /** Format: uuid */
+                    option_id: string;
+                };
             };
         };
         responses: {
-            /** @description OK */
-            200: {
+            /** @description Creado */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

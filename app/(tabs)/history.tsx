@@ -13,7 +13,7 @@ export default function History() {
   const { list, active, treatment, isLoading, updatedAt } = useActiveTreatment();
   const pending = usePendingScans();
   if (isLoading && !list.data) return <Loading />;
-  const previous = list.data?.items.filter((i) => i.status !== "active") ?? [];
+  const previous = list.data?.treatments.filter((i) => i.status !== "active") ?? [];
 
   return (
     <Screen>
@@ -24,12 +24,11 @@ export default function History() {
         <Card style={{ gap: spacing.md }}>
           <Text variant="heading">{t("history.activeTreatment")}</Text>
           <Text muted>
-            {active.product.name}
-            {active.product.presentation ? ` · ${active.product.presentation.name}` : ""}
+            {active.product.name} · {active.variant.name}
           </Text>
-          {active.adherence_percent !== undefined ? (
-            <Text variant="caption" muted>{t("history.adherence", { percent: active.adherence_percent })}</Text>
-          ) : null}
+          <Text variant="caption" muted>
+            {t("history.adherence", { onTime: active.progress.on_time, total: active.progress.total })}
+          </Text>
           <DoseCalendar doses={treatment.doses} pending={pending} />
           <Button
             variant="secondary"
@@ -48,12 +47,11 @@ export default function History() {
             <Card key={p.id} style={{ gap: spacing.xs }}>
               <Text variant="bodyStrong">{p.product.name}</Text>
               <Text variant="caption" muted>
-                {formatDate(p.started_at)}
-                {p.ends_at ? ` – ${formatDate(p.ends_at)}` : ""}
+                {formatDate(p.start_date)} – {formatDate(p.end_date)}
               </Text>
-              {p.adherence_percent !== undefined ? (
-                <Text variant="caption">{t("history.adherence", { percent: p.adherence_percent })}</Text>
-              ) : null}
+              <Text variant="caption">
+                {t("history.adherence", { onTime: p.progress.on_time, total: p.progress.total })}
+              </Text>
             </Card>
           ))}
         </>

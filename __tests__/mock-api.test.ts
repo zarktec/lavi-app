@@ -50,16 +50,17 @@ describe("servidor simulado", () => {
     const api = createMockApi();
     const h = login(api);
     const act = scan(api, h, "any") as unknown as { activation_token: string };
-    const ok = api.handle({ method: "POST", path: "/v1/treatments", headers: h, body: { activation_token: act.activation_token, schedule_times: ["08:00"] } });
-    expect(ok.status).toBe(200);
-    const reuse = api.handle({ method: "POST", path: "/v1/treatments", headers: h, body: { activation_token: act.activation_token, schedule_times: ["08:00"] } });
-    expect(reuse.status).toBe(410);
+    const ok = api.handle({ method: "POST", path: "/v1/treatments", headers: h, body: { activation_token: act.activation_token, reminder_times: ["08:00"] } });
+    expect(ok.status).toBe(201);
+    const reuse = api.handle({ method: "POST", path: "/v1/treatments", headers: h, body: { activation_token: act.activation_token, reminder_times: ["08:00"] } });
+    expect(reuse.status).toBe(400);
+    expect((reuse.body as { error: { code: string } }).error.code).toBe("activation_token_invalid");
   });
 
   it("el canje es idempotente", () => {
     const api = createMockApi();
     const h = login(api);
-    const req = { method: "POST", path: "/v1/redemptions", headers: { ...h, "idempotency-key": "k1" }, body: { option_id: "opt_10" } };
+    const req = { method: "POST", path: "/v1/redemptions", headers: { ...h, "idempotency-key": "k1" }, body: { option_id: "00000000-0000-4000-8000-000000000010" } };
     const a = api.handle(req).body as { code: string };
     const b = api.handle(req).body as { code: string };
     expect(a.code).toBe(b.code);

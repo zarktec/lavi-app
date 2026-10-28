@@ -26,7 +26,7 @@ export const useLedger = () =>
     queryKey: ["points", "ledger"],
     queryFn: ({ pageParam }) => endpoints.ledger(pageParam),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (last) => last.next_cursor ?? undefined,
+    getNextPageParam: (last) => last.next_before ?? undefined,
   });
 
 export const useRedemptions = () =>
@@ -47,7 +47,7 @@ export function useActivateTreatment() {
 
 export function useChangeSchedule(id: string) {
   return useMutation({
-    mutationFn: (schedule_times: string[]) => endpoints.changeSchedule(id, { schedule_times }),
+    mutationFn: (reminder_times: string[]) => endpoints.changeSchedule(id, { reminder_times }),
     onSuccess: async () => {
       await invalidateProgress();
       void syncReminders();

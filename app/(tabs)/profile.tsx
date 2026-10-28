@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Alert, Linking, Platform, TextInput, View } from "react-native";
 import { useMe } from "@/api/hooks";
 import { deleteAccount, signOut } from "@/auth/session";
-import { useRemoteConfig } from "@/config/useRemoteConfig";
+import { env } from "@/config/env";
 import { useT } from "@/i18n";
 import { handleTagUrl } from "@/nfc/handleTagUrl";
 import { openNfcSettings } from "@/nfc/reader";
@@ -16,7 +16,6 @@ import { colors, radius, spacing } from "@/ui/theme";
 
 export default function Profile() {
   const t = useT();
-  const { config } = useRemoteConfig();
   const me = useMe();
   const notifications = useUiStore((s) => s.notificationsStatus);
   const nfcEnabled = useUiStore((s) => s.nfcEnabled);
@@ -90,25 +89,25 @@ export default function Profile() {
         <ListRow
           icon="help-buoy-outline"
           title={t("profile.support")}
-          onPress={config.support_email ? () => void Linking.openURL(`mailto:${config.support_email}`) : undefined}
+          onPress={env.supportEmail ? () => void Linking.openURL(`mailto:${env.supportEmail}`) : undefined}
         />
-        {config.privacy_policy_url ? (
+        {env.privacyUrl ? (
           <>
             <Hairline />
             <ListRow
               icon="shield-checkmark-outline"
               title={t("profile.privacy")}
-              onPress={() => WebBrowser.openBrowserAsync(config.privacy_policy_url as string)}
+              onPress={() => WebBrowser.openBrowserAsync(env.privacyUrl)}
             />
           </>
         ) : null}
-        {config.terms_url ? (
+        {env.termsUrl ? (
           <>
             <Hairline />
             <ListRow
               icon="document-text-outline"
               title={t("profile.terms")}
-              onPress={() => WebBrowser.openBrowserAsync(config.terms_url as string)}
+              onPress={() => WebBrowser.openBrowserAsync(env.termsUrl)}
             />
           </>
         ) : null}

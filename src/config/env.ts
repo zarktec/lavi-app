@@ -5,6 +5,9 @@ type Extra = {
   apiUrl: string;
   linkDomain: string;
   sentryDsn: string;
+  supportEmail: string;
+  privacyUrl: string;
+  termsUrl: string;
   shopify: {
     storeDomain: string;
     storefrontToken: string;
@@ -19,6 +22,9 @@ export const env: Extra = {
   apiUrl: extra.apiUrl ?? "http://localhost:4010",
   linkDomain: extra.linkDomain ?? "links.lavi.example",
   sentryDsn: extra.sentryDsn ?? "",
+  supportEmail: extra.supportEmail ?? "",
+  privacyUrl: extra.privacyUrl ?? "",
+  termsUrl: extra.termsUrl ?? "",
   shopify: {
     storeDomain: extra.shopify?.storeDomain ?? "",
     storefrontToken: extra.shopify?.storefrontToken ?? "",
