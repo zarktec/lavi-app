@@ -56,7 +56,7 @@ async function run() {
       content: {
         title: translate(item.kind === "dose" ? "notifications.doseTitle" : "notifications.nudgeTitle", vars),
         body: translate(item.kind === "dose" ? "notifications.doseBody" : "notifications.nudgeBody", vars),
-        sound: "default",
+        sound: true,
         data: { dose_id: item.doseId, kind: item.kind, open: "scan" },
       },
       trigger: {

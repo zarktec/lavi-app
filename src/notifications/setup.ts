@@ -23,7 +23,6 @@ export async function ensureAndroidChannel() {
     name: translate("notifications.channel"),
     // eslint-disable-next-line import/namespace
     importance: Notifications.AndroidImportance.HIGH,
-    sound: "default",
     vibrationPattern: [0, 250, 250, 250],
   });
 }
