@@ -12,6 +12,9 @@ import { EAS_PROJECT_ID } from "@/config/env";
  */
 export const ANDROID_CHANNEL_ID = "reminders-v2";
 const LEGACY_CHANNEL_IDS = ["reminders"];
+/** Canal de la alarma tipo despertador: sonido largo por el volumen de alarmas, vibración larga, ignora «No molestar». */
+export const ALARM_CHANNEL_ID = "alarm-v1";
+export const ALARM_SOUND = "alarm.wav";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -33,6 +36,20 @@ export async function ensureAndroidChannel() {
     // eslint-disable-next-line import/namespace
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
+  });
+  await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
+    name: translate("notifications.alarmChannel"),
+    // eslint-disable-next-line import/namespace
+    importance: Notifications.AndroidImportance.MAX,
+    sound: ALARM_SOUND,
+    // eslint-disable-next-line import/namespace
+    audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM, contentType: Notifications.AndroidAudioContentType.SONIFICATION },
+    vibrationPattern: [0, 800, 400, 800, 400, 800, 400, 800],
+    enableVibrate: true,
+    enableLights: true,
+    bypassDnd: true,
+    // eslint-disable-next-line import/namespace
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
   });
 }
 

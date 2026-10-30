@@ -36,6 +36,19 @@ simulado. Edita `LAVI_API_URL` en `eas.json` con la IP de tu computadora, inicia
 (`MOCK_SEED=1 npm run mock`) y compila con `eas build --profile development-mock --platform android`.
 Teléfono y computadora deben estar en la misma red Wi-Fi; permite el puerto 4010 en el firewall de Windows.
 
+## Alarma tipo despertador
+
+Perfil → **Alarma tipo despertador** (activada por defecto; la clienta la puede desactivar y probar). Es una preferencia local.
+
+- **Android:** canal `alarm-v1` con sonido propio de 28 s (`assets/sounds/alarm.wav`) por el **volumen de alarmas**, vibración larga,
+  visible en pantalla bloqueada y con opción de ignorar «No molestar» (la clienta debe permitirlo en los ajustes del canal «Alarma de
+  aplicación»). Es una **notificación con sonido de alarma**, no una alarma de reloj: no se repite hasta atenderla ni abre una pantalla
+  propia, y las insistencias (`reminder_nudges`) repiten el aviso. La hora puede variar unos minutos (no se piden permisos de alarma exacta).
+- **iPhone:** mismo sonido (máx. 30 s) y nivel *time sensitive* (atraviesa los modos de concentración). iOS **no** permite saltarse el
+  interruptor de silencio sin «alertas críticas» (requieren autorización de Apple) o la API de alarmas de iOS 26 (AlarmKit, solo con
+  módulo nativo de terceros); quedan como opciones futuras.
+- Cambios nativos (sonido, permiso *time sensitive*): exigen un build nuevo.
+
 ## Estructura
 
 ```

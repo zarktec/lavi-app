@@ -50,6 +50,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: false,
     // Universal Links: el sistema lee el tag en segundo plano (iPhone XS o posterior).
     associatedDomains: [`applinks:${LINK_DOMAIN}`],
+    // «Time sensitive»: la alarma atraviesa los modos de concentración (no requiere aprobación de Apple).
+    entitlements: { "com.apple.developer.usernotifications.time-sensitive": true },
     infoPlist: {
       NFCReaderUsageDescription:
         "Lavi usa el NFC para leer el frasco cuando lo acercas al teléfono.",
@@ -92,6 +94,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         icon: "./assets/notification-icon.png",
         color: "#6B4FBB",
+        // Sonido de la alarma tipo despertador (28 s; iOS admite hasta 30 s).
+        sounds: ["./assets/sounds/alarm.wav"],
       },
     ],
     [

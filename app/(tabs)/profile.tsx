@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Linking, Platform, TextInput, View } from "react-native";
+import { Alert, Linking, Platform, Switch, TextInput, View } from "react-native";
 import { useMe } from "@/api/hooks";
 import { getReminderStatus, scheduleTestNotification, syncReminders } from "@/notifications/syncReminders";
 import { deleteAccount, signOut } from "@/auth/session";
@@ -10,6 +10,7 @@ import { env } from "@/config/env";
 import { useT } from "@/i18n";
 import { handleTagUrl } from "@/nfc/handleTagUrl";
 import { openNfcSettings } from "@/nfc/reader";
+import { setAlarmMode, useSettingsStore } from "@/store/settings";
 import { useUiStore } from "@/store/ui";
 import { Banner, Button, Card, Hairline, ListRow, Screen, Text } from "@/ui";
 import { ConnectionBanner } from "@/ui/ConnectionBanner";
@@ -24,6 +25,8 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null);
   const [devUrl, setDevUrl] = useState("");
   const [remindersInfo, setRemindersInfo] = useState<string>("");
+  const alarmMode = useSettingsStore((s) => s.alarmMode);
+  const [alarmMsg, setAlarmMsg] = useState("");
 
   const confirmLogout = () =>
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
@@ -78,6 +81,39 @@ export default function Profile() {
           subtitle={nfcEnabled ? t("profile.nfcOn") : t("profile.nfcOff")}
           onPress={Platform.OS === "android" && !nfcEnabled ? () => void openNfcSettings() : undefined}
         />
+      </Card>
+
+      <Card style={{ gap: spacing.sm }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyStrong">{t("alarm.title")}</Text>
+            <Text variant="caption" muted>{Platform.OS === "ios" ? t("alarm.descriptionIos") : t("alarm.description")}</Text>
+          </View>
+          <Switch
+            accessibilityLabel={t("alarm.title")}
+            value={alarmMode}
+            trackColor={{ true: colors.primary }}
+            onValueChange={async (v) => {
+              await setAlarmMode(v);
+              void syncReminders();
+            }}
+          />
+        </View>
+        {alarmMode ? (
+          <>
+            <Button
+              variant="secondary"
+              label={t("alarm.test")}
+              onPress={async () => {
+                await scheduleTestNotification(true, 5);
+                setAlarmMsg(t("alarm.testStarted"));
+              }}
+            />
+            {alarmMsg ? <Text variant="caption">{alarmMsg}</Text> : null}
+            <Text variant="caption" muted>{t("alarm.hint")}</Text>
+            <Button variant="ghost" label={t("alarm.settings")} onPress={() => void Linking.openSettings()} />
+          </>
+        ) : null}
       </Card>
 
       <Card>

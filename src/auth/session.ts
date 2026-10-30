@@ -13,6 +13,7 @@ import { getExpoPushToken } from "@/notifications/setup";
 import { clearPending, loadPendingCount } from "@/offline/queue";
 import { flushQueue } from "@/offline/sync";
 import { setAnalyticsConsent, loadConsent } from "@/analytics";
+import { loadSettings } from "@/store/settings";
 import { useSessionStore } from "@/store/session";
 import { useUiStore } from "@/store/ui";
 import { loginWithShopify } from "./shopifyAuth";
@@ -24,6 +25,7 @@ const ONBOARDING_KEY = "onboarding_done";
 export async function bootstrapSession() {
   const store = useSessionStore.getState();
   await loadConsent();
+  await loadSettings();
   store.setOnboardingDone((await kvGet(ONBOARDING_KEY)) === "1");
   await loadPendingCount();
   const refresh = await getToken("refresh");

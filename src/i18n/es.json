@@ -256,6 +256,9 @@
   },
   "notifications": {
     "channel": "Recordatorios de aplicación",
+    "alarmChannel": "Alarma de aplicación",
+    "testTitle": "Prueba de recordatorio",
+    "testBody": "Si ves y oyes esto, las notificaciones funcionan.",
     "doseTitle": "Es hora de tu aplicación",
     "doseBody": "Aplica {{product}} y acerca tu teléfono al frasco para sumar puntos.",
     "nudgeTitle": "¿Ya te aplicaste?",
@@ -264,6 +267,16 @@
     "backupBody": "Tu ventana sigue abierta: acerca el teléfono al frasco para registrar tu dosis.",
     "syncedTitle": "Lectura registrada",
     "syncFailedTitle": "No pudimos registrar una lectura"
+  },
+  "alarm": {
+    "title": "Alarma tipo despertador",
+    "description": "Los recordatorios suenan como una alarma, con sonido largo y vibración, aunque el teléfono esté en silencio o en «No molestar».",
+    "descriptionIos": "Los recordatorios suenan más fuerte y se saltan los modos de concentración. En iPhone no pueden ignorar el interruptor de silencio.",
+    "test": "Probar la alarma",
+    "testStarted": "La alarma sonará en 5 segundos: bloquea el teléfono o minimiza la app.",
+    "testTitle": "⏰ Prueba de alarma",
+    "settings": "Ajustes de sonido del sistema",
+    "hint": "Si no suena, abre los ajustes y permite «Ignorar No molestar» en la categoría «Alarma de aplicación»."
   },
   "errors": {
     "authExpired": "Tu sesión venció. Inicia sesión de nuevo."
