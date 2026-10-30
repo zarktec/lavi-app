@@ -19,7 +19,14 @@ export class LoginCancelledError extends Error {
   }
 }
 
-export const redirectUri = () => AuthSession.makeRedirectUri({ scheme: "lavi", path: "auth/callback" });
+/**
+ * Shopify exige una URI de devolución https. La registrada es `https://<dominio>/auth/callback`: una
+ * página del backend que reenvía a la app (`lavi://auth/callback`). Esa URI https es la que va en la
+ * petición OAuth y en el intercambio del código; la app solo espera el retorno a su esquema propio.
+ */
+export const buildRedirectUri = (linkDomain: string) => `https://${linkDomain}/auth/callback`;
+export const redirectUri = () => buildRedirectUri(env.linkDomain);
+export const appReturnUrl = () => AuthSession.makeRedirectUri({ scheme: "lavi", path: "auth/callback" });
 
 let discoveryCache: AuthSession.DiscoveryDocument | null = null;
 
@@ -50,8 +57,10 @@ export async function loginWithShopify(): Promise<ShopifyLoginResult> {
     usePKCE: true,
     extraParams: { nonce: Crypto.randomUUID() },
   });
-  await request.makeAuthUrlAsync(discovery);
-  const result = await request.promptAsync(discovery);
+  const authUrl = await request.makeAuthUrlAsync(discovery);
+  const browser = await WebBrowser.openAuthSessionAsync(authUrl, appReturnUrl());
+  if (browser.type !== "success") throw new LoginCancelledError();
+  const result = request.parseReturnUrl(browser.url);
   if (result.type !== "success") throw new LoginCancelledError();
 
   const tokens = await AuthSession.exchangeCodeAsync(

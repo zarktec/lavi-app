@@ -2,13 +2,15 @@ import Constants from "expo-constants";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Linking, Platform, TextInput, View } from "react-native";
+import { Alert, Linking, Platform, Switch, TextInput, View } from "react-native";
 import { useMe } from "@/api/hooks";
+import { getReminderStatus, scheduleTestNotification, syncReminders } from "@/notifications/syncReminders";
 import { deleteAccount, signOut } from "@/auth/session";
 import { env } from "@/config/env";
 import { useT } from "@/i18n";
 import { handleTagUrl } from "@/nfc/handleTagUrl";
 import { openNfcSettings } from "@/nfc/reader";
+import { setAlarmMode, useSettingsStore } from "@/store/settings";
 import { useUiStore } from "@/store/ui";
 import { Banner, Button, Card, Hairline, ListRow, Screen, Text } from "@/ui";
 import { ConnectionBanner } from "@/ui/ConnectionBanner";
@@ -22,6 +24,9 @@ export default function Profile() {
   const online = useUiStore((s) => s.online);
   const [error, setError] = useState<string | null>(null);
   const [devUrl, setDevUrl] = useState("");
+  const [remindersInfo, setRemindersInfo] = useState<string>("");
+  const alarmMode = useSettingsStore((s) => s.alarmMode);
+  const [alarmMsg, setAlarmMsg] = useState("");
 
   const confirmLogout = () =>
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
@@ -78,6 +83,39 @@ export default function Profile() {
         />
       </Card>
 
+      <Card style={{ gap: spacing.sm }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyStrong">{t("alarm.title")}</Text>
+            <Text variant="caption" muted>{Platform.OS === "ios" ? t("alarm.descriptionIos") : t("alarm.description")}</Text>
+          </View>
+          <Switch
+            accessibilityLabel={t("alarm.title")}
+            value={alarmMode}
+            trackColor={{ true: colors.primary }}
+            onValueChange={async (v) => {
+              await setAlarmMode(v);
+              void syncReminders();
+            }}
+          />
+        </View>
+        {alarmMode ? (
+          <>
+            <Button
+              variant="secondary"
+              label={t("alarm.test")}
+              onPress={async () => {
+                await scheduleTestNotification(true, 5);
+                setAlarmMsg(t("alarm.testStarted"));
+              }}
+            />
+            {alarmMsg ? <Text variant="caption">{alarmMsg}</Text> : null}
+            <Text variant="caption" muted>{t("alarm.hint")}</Text>
+            <Button variant="ghost" label={t("alarm.settings")} onPress={() => void Linking.openSettings()} />
+          </>
+        ) : null}
+      </Card>
+
       <Card>
         <Text variant="bodyStrong">{t("profile.personalData")}</Text>
         <Text muted>{me.data?.name ?? "—"}</Text>
@@ -129,6 +167,29 @@ export default function Profile() {
             style={{ borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm }}
           />
           <Button label="Inyectar" variant="secondary" onPress={() => void handleTagUrl(devUrl, "button")} />
+          <Text variant="caption" muted>DEV · recordatorios</Text>
+          <Button
+            label="Reprogramar y ver programados"
+            variant="secondary"
+            onPress={async () => {
+              await syncReminders();
+              const s = await getReminderStatus();
+              const next = s.upcoming.map((u) => `${u.kind} ${u.when ? u.when.toLocaleString("es-CO") : "?"}`).join("\n");
+              setRemindersInfo(
+                `Permiso: ${s.granted ? "sí" : "NO"}\nProgramadas: ${s.total}\n${next}` +
+                  (s.lastSync ? `\nÚltima: ${s.lastSync.scheduled} prog.${s.lastSync.error ? ` · error: ${s.lastSync.error}` : ""}` : ""),
+              );
+            }}
+          />
+          <Button
+            label="Notificación de prueba (10 s)"
+            variant="secondary"
+            onPress={async () => {
+              await scheduleTestNotification();
+              setRemindersInfo("Prueba programada: cierra o minimiza la app y espera 10 s.");
+            }}
+          />
+          {remindersInfo ? <Text variant="caption">{remindersInfo}</Text> : null}
         </Card>
       ) : null}
 

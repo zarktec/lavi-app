@@ -1,9 +1,26 @@
-import NfcManager, { Ndef, NfcEvents, NfcTech, type NdefRecord, type TagEvent } from "react-native-nfc-manager";
+import NfcManager, {
+  Ndef,
+  NfcAdapter,
+  NfcEvents,
+  NfcTech,
+  type NdefRecord,
+  type TagEvent,
+} from "react-native-nfc-manager";
 import { Platform } from "react-native";
 import { translate } from "@/i18n";
 import { useUiStore } from "@/store/ui";
 
 export const SCAN_TIMEOUT_MS = 30_000;
+
+/**
+ * Tecnologías que escucha el modo lector de Android. La librería usa 0 por defecto, que no detecta
+ * ningún tag: el sistema se queda con la lectura y abre el enlace en el navegador. NTAG215/424 son NFC-A.
+ */
+export const ANDROID_READER_FLAGS =
+  NfcAdapter.FLAG_READER_NFC_A |
+  NfcAdapter.FLAG_READER_NFC_B |
+  NfcAdapter.FLAG_READER_NFC_F |
+  NfcAdapter.FLAG_READER_NFC_V;
 
 /** Primer registro NDEF de tipo URI, o `null` si el tag no lo trae. */
 export function extractUrl(tag: TagEvent | null | undefined): string | null {
@@ -103,7 +120,7 @@ export function startReading(timeoutMs = SCAN_TIMEOUT_MS): ActiveRead {
         onTag(await NfcManager.getTag());
       } else {
         NfcManager.setEventListener(NfcEvents.DiscoverTag, onTag);
-        await NfcManager.registerTagEvent({ isReaderModeEnabled: true });
+        await NfcManager.registerTagEvent({ isReaderModeEnabled: true, readerModeFlags: ANDROID_READER_FLAGS });
       }
     } catch {
       // cancelación de la clienta o sesión cerrada por el sistema: sin error

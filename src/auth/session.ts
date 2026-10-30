@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { endpoints } from "@/api/endpoints";
 import { setAuthFailureHandler } from "@/api/client";
 import { queryClient, sqlitePersister } from "@/api/queryClient";
+import { env } from "@/config/env";
 import { kvGet, kvSet } from "@/lib/db";
 import { deviceTimeZone } from "@/lib/time";
 import { setSentryUser } from "@/lib/sentry";
@@ -12,6 +13,7 @@ import { getExpoPushToken } from "@/notifications/setup";
 import { clearPending, loadPendingCount } from "@/offline/queue";
 import { flushQueue } from "@/offline/sync";
 import { setAnalyticsConsent, loadConsent } from "@/analytics";
+import { loadSettings } from "@/store/settings";
 import { useSessionStore } from "@/store/session";
 import { useUiStore } from "@/store/ui";
 import { loginWithShopify } from "./shopifyAuth";
@@ -23,6 +25,7 @@ const ONBOARDING_KEY = "onboarding_done";
 export async function bootstrapSession() {
   const store = useSessionStore.getState();
   await loadConsent();
+  await loadSettings();
   store.setOnboardingDone((await kvGet(ONBOARDING_KEY)) === "1");
   await loadPendingCount();
   const refresh = await getToken("refresh");
@@ -63,7 +66,8 @@ export async function registerPushDevice() {
 
 /** Inicio de sesión con Shopify y sesión propia del backend. */
 export async function signIn(opts: { acceptedAnalytics: boolean }) {
-  const shopify = await loginWithShopify();
+  // Modo de prueba (solo fuera de producción): sin Shopify, contra el servidor simulado.
+  const shopify = env.devLogin ? { accessToken: "dev-login-token" } : await loginWithShopify();
   const tokens = await endpoints.createSession({
     shopify_access_token: shopify.accessToken,
     data_consent: true,

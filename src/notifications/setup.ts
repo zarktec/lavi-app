@@ -5,7 +5,16 @@ import { translate } from "@/i18n";
 import { useUiStore } from "@/store/ui";
 import { EAS_PROJECT_ID } from "@/config/env";
 
-export const ANDROID_CHANNEL_ID = "reminders";
+/**
+ * Los canales de Android son inmutables una vez creados (sonido e importancia). El canal «reminders» se creó
+ * con un sonido inválido (`sound: "default"`) y pudo quedar mudo en los teléfonos donde ya existía: se
+ * abandona y se usa uno nuevo.
+ */
+export const ANDROID_CHANNEL_ID = "reminders-v2";
+const LEGACY_CHANNEL_IDS = ["reminders"];
+/** Canal de la alarma tipo despertador: sonido largo por el volumen de alarmas, vibración larga, ignora «No molestar». */
+export const ALARM_CHANNEL_ID = "alarm-v1";
+export const ALARM_SOUND = "alarm.wav";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -19,12 +28,28 @@ Notifications.setNotificationHandler({
 /** Canal propio con importancia alta y sonido (Android). */
 export async function ensureAndroidChannel() {
   if (Platform.OS !== "android") return;
+  for (const id of LEGACY_CHANNEL_IDS) {
+    await Notifications.deleteNotificationChannelAsync(id).catch(() => {});
+  }
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
     name: translate("notifications.channel"),
     // eslint-disable-next-line import/namespace
     importance: Notifications.AndroidImportance.HIGH,
-    sound: "default",
     vibrationPattern: [0, 250, 250, 250],
+  });
+  await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
+    name: translate("notifications.alarmChannel"),
+    // eslint-disable-next-line import/namespace
+    importance: Notifications.AndroidImportance.MAX,
+    sound: ALARM_SOUND,
+    // eslint-disable-next-line import/namespace
+    audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM, contentType: Notifications.AndroidAudioContentType.SONIFICATION },
+    vibrationPattern: [0, 800, 400, 800, 400, 800, 400, 800],
+    enableVibrate: true,
+    enableLights: true,
+    bypassDnd: true,
+    // eslint-disable-next-line import/namespace
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
   });
 }
 
@@ -36,7 +61,8 @@ export async function refreshPermissionStatus() {
 }
 
 export async function requestPermission(): Promise<boolean> {
-  await ensureAndroidChannel();
+  // Un fallo al crear el canal no debe impedir pedir el permiso del sistema.
+  await ensureAndroidChannel().catch(() => {});
   const res = await Notifications.requestPermissionsAsync();
   useUiStore.getState().setNotificationsStatus(res.granted ? "granted" : "denied");
   return res.granted;

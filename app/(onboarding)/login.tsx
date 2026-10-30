@@ -42,6 +42,7 @@ export default function Login() {
         <Text muted style={{ textAlign: "center" }}>{t("login.body")}</Text>
       </View>
       <View style={{ gap: spacing.md }}>
+        {env.devLogin ? <Banner tone="info" text="Modo de prueba: sin Shopify, con el servidor simulado." /> : null}
         {error ? <Banner tone="danger" text={error} /> : null}
         <Pressable
           accessibilityRole="checkbox"

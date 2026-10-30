@@ -29,6 +29,26 @@ En el mock, el parámetro `d` del tag fuerza el resultado: `sim_activation`, `si
 `sim_late`, `sim_no_pending`, `sim_finished`, `sim_invalid_signature`, `sim_replayed`, `sim_owned_by_other`,
 `sim_blocked`, `sim_offline_expired`, `sim_unknown`. En el menú Perfil (solo desarrollo) hay un campo para pegar una URL.
 
+## Probar sin Shopify (modo de prueba)
+
+Perfil de EAS `development-mock`: entra sin Shopify (`LAVI_DEV_LOGIN=1`, nunca en producción) y usa el servidor
+simulado. Edita `LAVI_API_URL` en `eas.json` con la IP de tu computadora, inicia el mock
+(`MOCK_SEED=1 npm run mock`) y compila con `eas build --profile development-mock --platform android`.
+Teléfono y computadora deben estar en la misma red Wi-Fi; permite el puerto 4010 en el firewall de Windows.
+
+## Alarma tipo despertador
+
+Perfil → **Alarma tipo despertador** (activada por defecto; la clienta la puede desactivar y probar). Es una preferencia local.
+
+- **Android:** canal `alarm-v1` con sonido propio de 28 s (`assets/sounds/alarm.wav`) por el **volumen de alarmas**, vibración larga,
+  visible en pantalla bloqueada y con opción de ignorar «No molestar» (la clienta debe permitirlo en los ajustes del canal «Alarma de
+  aplicación»). Es una **notificación con sonido de alarma**, no una alarma de reloj: no se repite hasta atenderla ni abre una pantalla
+  propia, y las insistencias (`reminder_nudges`) repiten el aviso. La hora puede variar unos minutos (no se piden permisos de alarma exacta).
+- **iPhone:** mismo sonido (máx. 30 s) y nivel *time sensitive* (atraviesa los modos de concentración). iOS **no** permite saltarse el
+  interruptor de silencio sin «alertas críticas» (requieren autorización de Apple) o la API de alarmas de iOS 26 (AlarmKit, solo con
+  módulo nativo de terceros); quedan como opciones futuras.
+- Cambios nativos (sonido, permiso *time sensitive*): exigen un build nuevo.
+
 ## Estructura
 
 ```
@@ -96,7 +116,7 @@ Brechas del backend frente a la especificación de la app (la app las resuelve a
 - NFC en segundo plano y por botón en iOS (XS o posterior) y Android; vibración; ventana de 30 s.
 - Universal Links / App Links: requiere que el backend sirva `apple-app-site-association` (con el Team ID) y
   `assetlinks.json` (con la huella SHA-256) en `LAVI_LINK_DOMAIN`.
-- Login real de Shopify: registrar `lavi://auth/callback` (el backend documenta `tumarca://auth/callback`: unificar el esquema) como URI de redirección del cliente público; la
+- Login real de Shopify: Shopify exige URI https; registrar `https://<LAVI_LINK_DOMAIN>/auth/callback` (página puente del backend que reenvía a `lavi://auth/callback`) como URI de redirección del cliente público; la
   autenticación del carrito (`buyerIdentity.customerAccessToken`) y el descubrimiento OAuth
   (`/.well-known/openid-configuration`) deben confirmarse contra la tienda de desarrollo.
 - Notificaciones locales y push de respaldo, tarea en segundo plano, Checkout Kit con código de canje.

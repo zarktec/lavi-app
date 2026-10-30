@@ -2,6 +2,7 @@ import Constants from "expo-constants";
 
 type Extra = {
   appEnv: "development" | "preview" | "production";
+  devLogin: boolean;
   apiUrl: string;
   linkDomain: string;
   sentryDsn: string;
@@ -19,6 +20,7 @@ const extra = (Constants.expoConfig?.extra ?? {}) as Partial<Extra>;
 
 export const env: Extra = {
   appEnv: extra.appEnv ?? "development",
+  devLogin: extra.appEnv !== "production" && extra.devLogin === true,
   apiUrl: extra.apiUrl ?? "http://localhost:4010",
   linkDomain: extra.linkDomain ?? "links.lavi.example",
   sentryDsn: extra.sentryDsn ?? "",
