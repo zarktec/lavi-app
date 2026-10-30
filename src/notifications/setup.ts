@@ -5,7 +5,13 @@ import { translate } from "@/i18n";
 import { useUiStore } from "@/store/ui";
 import { EAS_PROJECT_ID } from "@/config/env";
 
-export const ANDROID_CHANNEL_ID = "reminders";
+/**
+ * Los canales de Android son inmutables una vez creados (sonido e importancia). El canal «reminders» se creó
+ * con un sonido inválido (`sound: "default"`) y pudo quedar mudo en los teléfonos donde ya existía: se
+ * abandona y se usa uno nuevo.
+ */
+export const ANDROID_CHANNEL_ID = "reminders-v2";
+const LEGACY_CHANNEL_IDS = ["reminders"];
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -19,6 +25,9 @@ Notifications.setNotificationHandler({
 /** Canal propio con importancia alta y sonido (Android). */
 export async function ensureAndroidChannel() {
   if (Platform.OS !== "android") return;
+  for (const id of LEGACY_CHANNEL_IDS) {
+    await Notifications.deleteNotificationChannelAsync(id).catch(() => {});
+  }
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
     name: translate("notifications.channel"),
     // eslint-disable-next-line import/namespace
@@ -35,7 +44,8 @@ export async function refreshPermissionStatus() {
 }
 
 export async function requestPermission(): Promise<boolean> {
-  await ensureAndroidChannel();
+  // Un fallo al crear el canal no debe impedir pedir el permiso del sistema.
+  await ensureAndroidChannel().catch(() => {});
   const res = await Notifications.requestPermissionsAsync();
   useUiStore.getState().setNotificationsStatus(res.granted ? "granted" : "denied");
   return res.granted;

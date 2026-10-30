@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Linking, Platform, TextInput, View } from "react-native";
 import { useMe } from "@/api/hooks";
+import { getReminderStatus, scheduleTestNotification, syncReminders } from "@/notifications/syncReminders";
 import { deleteAccount, signOut } from "@/auth/session";
 import { env } from "@/config/env";
 import { useT } from "@/i18n";
@@ -22,6 +23,7 @@ export default function Profile() {
   const online = useUiStore((s) => s.online);
   const [error, setError] = useState<string | null>(null);
   const [devUrl, setDevUrl] = useState("");
+  const [remindersInfo, setRemindersInfo] = useState<string>("");
 
   const confirmLogout = () =>
     Alert.alert(t("profile.logout"), t("profile.logoutConfirm"), [
@@ -129,6 +131,29 @@ export default function Profile() {
             style={{ borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.sm }}
           />
           <Button label="Inyectar" variant="secondary" onPress={() => void handleTagUrl(devUrl, "button")} />
+          <Text variant="caption" muted>DEV · recordatorios</Text>
+          <Button
+            label="Reprogramar y ver programados"
+            variant="secondary"
+            onPress={async () => {
+              await syncReminders();
+              const s = await getReminderStatus();
+              const next = s.upcoming.map((u) => `${u.kind} ${u.when ? u.when.toLocaleString("es-CO") : "?"}`).join("\n");
+              setRemindersInfo(
+                `Permiso: ${s.granted ? "sí" : "NO"}\nProgramadas: ${s.total}\n${next}` +
+                  (s.lastSync ? `\nÚltima: ${s.lastSync.scheduled} prog.${s.lastSync.error ? ` · error: ${s.lastSync.error}` : ""}` : ""),
+              );
+            }}
+          />
+          <Button
+            label="Notificación de prueba (10 s)"
+            variant="secondary"
+            onPress={async () => {
+              await scheduleTestNotification();
+              setRemindersInfo("Prueba programada: cierra o minimiza la app y espera 10 s.");
+            }}
+          />
+          {remindersInfo ? <Text variant="caption">{remindersInfo}</Text> : null}
         </Card>
       ) : null}
 

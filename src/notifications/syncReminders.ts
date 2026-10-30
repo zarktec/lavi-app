@@ -10,6 +10,9 @@ import { ANDROID_CHANNEL_ID, ensureAndroidChannel } from "./setup";
 let running: Promise<void> | null = null;
 let queued = false;
 
+export type ReminderSyncStatus = { at: number; scheduled: number; error?: string };
+let lastSync: ReminderSyncStatus | null = null;
+
 async function loadActiveTreatment(): Promise<Treatment | null | undefined> {
   // `undefined` = no se pudo saber (sin conexión y sin caché): no tocar lo programado.
   try {
@@ -46,11 +49,16 @@ async function run() {
   if (treatment === undefined) return;
 
   await Notifications.cancelAllScheduledNotificationsAsync();
-  if (!treatment) return;
-  await ensureAndroidChannel();
+  if (!treatment) {
+    lastSync = { at: Date.now(), scheduled: 0 };
+    return;
+  }
+  // Si el canal falla, igual se programan: Android usa el canal por defecto.
+  await ensureAndroidChannel().catch((e) => console.warn("[recordatorios] canal:", e));
 
   const plan = planReminders(treatment.doses, treatment.config?.reminder_nudges ?? []);
   const vars = { product: treatment.product.name };
+  let scheduled = 0;
   for (const item of plan) {
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -65,7 +73,38 @@ async function run() {
         ...(Platform.OS === "android" ? { channelId: ANDROID_CHANNEL_ID } : {}),
       },
     });
+    scheduled += 1;
   }
+  lastSync = { at: Date.now(), scheduled };
+}
+
+/** Estado para diagnóstico: permiso, última programación y lo que Android tiene pendiente. */
+export async function getReminderStatus() {
+  const [perm, pending] = await Promise.all([
+    Notifications.getPermissionsAsync(),
+    Notifications.getAllScheduledNotificationsAsync(),
+  ]);
+  const upcoming = pending
+    .map((n) => {
+      const trigger = n.trigger as { value?: number; date?: number } | null;
+      const when = trigger?.value ?? trigger?.date;
+      return { kind: (n.content.data as { kind?: string })?.kind ?? "?", when: typeof when === "number" ? new Date(when) : null };
+    })
+    .sort((a, b) => (a.when?.getTime() ?? 0) - (b.when?.getTime() ?? 0));
+  return { granted: perm.granted, total: pending.length, upcoming: upcoming.slice(0, 4), lastSync };
+}
+
+/** Notificación de prueba en 10 s: comprueba permiso, canal y sonido sin depender del backend. */
+export async function scheduleTestNotification() {
+  await ensureAndroidChannel().catch(() => {});
+  return Notifications.scheduleNotificationAsync({
+    content: { title: "Prueba de recordatorio", body: "Si ves y oyes esto, las notificaciones funcionan.", sound: true, data: { open: "home" } },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 10,
+      ...(Platform.OS === "android" ? { channelId: ANDROID_CHANNEL_ID } : {}),
+    },
+  });
 }
 
 /**
@@ -78,7 +117,10 @@ export function syncReminders(): Promise<void> {
     return running;
   }
   running = run()
-    .catch(() => {})
+    .catch((e) => {
+      lastSync = { at: Date.now(), scheduled: 0, error: e instanceof Error ? e.message : String(e) };
+      console.warn("[recordatorios] no se pudieron programar:", e);
+    })
     .finally(async () => {
       running = null;
       if (queued) {
